@@ -149,6 +149,38 @@
   white-space: nowrap;
 }
 
+.rec-detail {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  gap: 4px 10px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  background: #fbf9f4;
+  border: 1px solid var(--line);
+}
+
+.rec-cell { display: flex; gap: 6px; min-width: 0; font-size: 12px; line-height: 1.5; }
+
+.rec-l {
+  flex: 0 0 auto;
+  color: var(--ink-3);
+  letter-spacing: 0.02em;
+}
+
+.rec-v {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--ink);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rec-v.is-empty { color: var(--line-strong); font-weight: 400; }
+
 .rec-ops {
   grid-column: 1 / -1;
   display: flex;
