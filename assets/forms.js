@@ -4,7 +4,7 @@
  */
 window.ISO_META = {
   company: "CHANG CHUAN ENTERPRISE CO., LTD.",
-  companyCN: "彰全企業",
+  companyCN: "彰銓企業股份有限公司",
   system: "ISO 9001 品質管理系統 · 表單管制",
   repo: "cceccecasters/iso-form-system",
   updated: "2026-10-24"
