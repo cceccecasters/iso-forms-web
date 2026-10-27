@@ -15,20 +15,44 @@
     try { return !!window.indexedDB; } catch (e) { return false; }
   }
 
+  var idbBroken = false;
+  var repairing = false;
+
+  function createStore(db) {
+    var os = db.createObjectStore(STORE, { keyPath: "rid" });
+    os.createIndex("form", "form", { unique: false });
+    os.createIndex("updatedAt", "updatedAt", { unique: false });
+  }
+
   function openDB() {
     if (dbPromise) return dbPromise;
+    if (idbBroken) return Promise.reject(new Error("idb disabled"));
     dbPromise = new Promise(function (resolve, reject) {
       var req = indexedDB.open(DB_NAME, DB_VER);
       req.onupgradeneeded = function () {
         var db = req.result;
-        if (!db.objectStoreNames.contains(STORE)) {
-          var os = db.createObjectStore(STORE, { keyPath: "rid" });
-          os.createIndex("form", "form", { unique: false });
-          os.createIndex("updatedAt", "updatedAt", { unique: false });
-        }
+        if (!db.objectStoreNames.contains(STORE)) createStore(db);
       };
-      req.onsuccess = function () { resolve(req.result); };
-      req.onerror = function () { reject(req.error); };
+      req.onsuccess = function () {
+        var db = req.result;
+        // 舊版殘留的空 DB：版本相同不會再觸發 upgrade，這裡自我修復一次
+        if (!db.objectStoreNames.contains(STORE) && !repairing) {
+          repairing = true;
+          db.close();
+          dbPromise = null;
+          var del = indexedDB.deleteDatabase(DB_NAME);
+          del.onsuccess = del.onerror = del.onblocked = function () { resolve(openDB()); };
+          return;
+        }
+        if (!db.objectStoreNames.contains(STORE)) {
+          idbBroken = true;
+          db.close();
+          reject(new Error("missing store"));
+          return;
+        }
+        resolve(db);
+      };
+      req.onerror = function () { idbBroken = true; reject(req.error); };
     });
     return dbPromise;
   }
@@ -68,7 +92,7 @@
       // text/plain 避免 Apps Script 的 CORS 預檢被擋
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify(payload)
-    }).then(function (r) { return r.json(); }).catch(function () { return null; });
+    }).then(function (r) { return r.json(); }).catch(function () { idbBroken = true; return null; });
   }
 
   var Store = {
@@ -84,7 +108,7 @@
               tx.oncomplete = function () { resolve(true); };
               tx.onerror = function () { reject(tx.error); };
             });
-          }).catch(function () { return null; })
+          }).catch(function () { idbBroken = true; return null; })
         : Promise.resolve(null);
 
       return local.then(function (ok) {
@@ -111,7 +135,7 @@
               };
               tx.onerror = function () { resolve([]); };
             });
-          }).catch(function () { return []; })
+          }).catch(function () { idbBroken = true; return null; })
         : Promise.resolve(null);
 
       return local.then(function (rows) {
