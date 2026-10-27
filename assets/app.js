@@ -9,7 +9,7 @@
   var HISTORY = window.ISO_HISTORY;
   var FILE_LIMIT = 1024 * 1024;
 
-  var state = { current: FORMS[0].id, files: {}, savedAt: null };
+  var state = { current: FORMS[0].id, files: {}, savedAt: null, editingRid: null };
 
   /* ---------- utils ---------- */
   function esc(s) {
@@ -347,6 +347,7 @@
     var card = document.querySelector('[data-form="' + f.id + '"]');
     if (!card) return;
     if (!confirm("清除「" + f.title + "」的本機草稿？此動作不影響已匯出的檔案。")) return;
+    state.editingRid = null;
     localStorage.removeItem(draftKey(f.id));
     card.querySelectorAll("[data-k]").forEach(function (el) {
       if (el.type === "radio" || el.type === "checkbox") el.checked = false; else el.value = "";
@@ -441,11 +442,12 @@
   var STORE = window.ISOStore;
   var drawerRecords = [];
 
-  function metaOf(values) {
+  function metaOf(values, f) {
     return {
       no: values["s0.no"] || "",
       applyDate: values["s0.applyDate"] || "",
-      applicant: values["s0.applicant"] || "",
+      // 003 沒有 s0.applicant，申請人落在核准表的第 1 列
+      applicant: values[(f && f.applicantKey) || "s0.applicant"] || "",
       dept: values["s0.dept"] || "",
       product: values["s0.product"] || "",
       itemNo: values["s0.itemNo"] || ""
@@ -462,20 +464,36 @@
       renderProgress(f.id);
     }
     var values = collect(f.id);
-    var m = metaOf(values);
+    var m = metaOf(values, f);
     var rec = {
       form: f.id, title: f.title, version: f.version, effective: f.effective,
       values: values, files: state.files,
       no: m.no, applyDate: m.applyDate, applicant: m.applicant, dept: m.dept, product: m.product
     };
+    var isUpdate = !!state.editingRid;
+    if (isUpdate) rec.rid = state.editingRid;
     setStatus("儲存中…", "");
-    STORE.save(rec).then(function (saved) {
+    STORE.list(f.id).then(function (rows) {
+      // 單號已被別筆紀錄用掉時，自動換新號，避免兩筆同號
+      var dupe = rows.filter(function (r) { return m.no && r.no === m.no && r.rid !== rec.rid; })[0];
+      if (dupe) {
+        var fresh = nextSerial(f.prefix);
+        noInput.value = fresh;
+        rec.no = fresh;
+        rec.values["s0.no"] = fresh;
+        renderProgress(f.id);
+        state.editingRid = null;
+        delete rec.rid;
+      }
+      return STORE.save(rec);
+    }).then(function (saved) {
+      state.editingRid = saved.rid;
       // 寫入後回讀確認，避免儲存空間異常時靜默失敗
       return STORE.list(rec.form).then(function (rows) {
         refreshCount();
         var ok = rows.some(function (r) { return r.rid === saved.rid; });
         if (ok) {
-          setStatus("紀錄已儲存 " + (saved.no || ""), "ok");
+          setStatus((isUpdate ? "已更新紀錄 " : "紀錄已儲存 ") + (saved.no || ""), "ok");
           state.stickyUntil = Date.now() + 5000;
         } else {
           setStatus("紀錄未寫入，請重新載入頁面後再試", "warn");
@@ -523,7 +541,9 @@
     var q = String((document.querySelector("[data-record-search]") || {}).value || "").trim().toLowerCase();
     var rows = drawerRecords.filter(function (r) {
       if (!q) return true;
-      return [r.no, r.applicant, r.product, r.applyDate, r.dept].join(" ").toLowerCase().indexOf(q) > -1;
+      var f = formById(r.form);
+      var extra = (f.listFields || []).map(function (fd) { return (r.values || {})[fd.k] || ""; });
+      return [r.no, r.applicant, r.product, r.applyDate, r.dept].concat(extra).join(" ").toLowerCase().indexOf(q) > -1;
     });
     document.querySelector("[data-drawer-count]").textContent = rows.length + " 筆";
     if (!rows.length) {
@@ -531,14 +551,21 @@
       return;
     }
     box.innerHTML = rows.map(function (r) {
-      var outdated = r.version !== formById(r.form).version;
+      var f = formById(r.form);
+      var outdated = r.version !== f.version;
+      var detail = (f.listFields || []).map(function (fd) {
+        var v = (r.values || {})[fd.k] || "";
+        return '<div class="rec-cell"><span class="rec-l">' + esc(fd.l) + "</span>" +
+          '<span class="rec-v' + (v ? "" : " is-empty") + '">' + esc(v || "—") + "</span></div>";
+      }).join("");
       return '<article class="rec" data-rid="' + esc(r.rid) + '">' +
         '<div class="rec-main">' +
         '<div class="rec-no">' + esc(r.no || "（未取號）") +
         (outdated ? '<span class="rec-tag">舊版次 ' + esc(r.version) + "</span>" : "") + "</div>" +
-        '<div class="rec-meta">' + esc([r.applyDate, r.applicant, r.dept, r.product].filter(Boolean).join(" · ") || "—") + "</div>" +
+        '<div class="rec-meta">' + esc(f.title) + "　" + esc([r.applyDate, r.applicant, r.dept].filter(Boolean).join(" · ") || "—") + "</div>" +
         "</div>" +
         '<div class="rec-time">' + esc(fmtTime(r.updatedAt)) + "</div>" +
+        '<div class="rec-detail">' + detail + "</div>" +
         '<div class="rec-ops">' +
         '<button type="button" class="btn btn-sm" data-rec-open="' + esc(r.rid) + '">開啟</button>' +
         '<button type="button" class="btn btn-sm" data-rec-print="' + esc(r.rid) + '">列印</button>' +
@@ -563,6 +590,7 @@
     show(rec.form);
     state.files = rec.files || {};
     restore(rec.form, rec.values || {});
+    state.editingRid = rec.rid;
     renderProgress(rec.form);
     if (rec.version !== formById(rec.form).version) {
       setStatus("此紀錄為 v" + rec.version + "，現行表單為 v" + formById(rec.form).version, "warn");
@@ -595,6 +623,7 @@
     var f = formById(id);
     document.title = f.id + " " + f.title + " · " + META.system;
     state.files = {};
+    state.editingRid = null;
     if (!loadDraft(id)) setStatus("尚未填寫", "");
     else setStatus("已載入本機草稿", "ok");
     renderProgress(id);
@@ -648,6 +677,7 @@
         var el = document.querySelector('[data-form="' + state.current + '"] [data-k="' + path + '"]');
         if (el) {
           el.value = nextSerial(b.getAttribute("data-serial"));
+          state.editingRid = null;  // 取新號 = 開新紀錄，不再覆蓋原紀錄
           saveNow();
           renderProgress(state.current);
           setStatus("已取號 " + el.value, "ok");
