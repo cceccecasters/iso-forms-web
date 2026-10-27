@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ISO 表單填寫系統 · 彰全企業</title>
+<meta name="description" content="ISO 9001 表單線上填寫：模具變更單、流程變更單、出貨同意單。">
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+
+<header class="app-header">
+  <div class="header-inner">
+    <div class="brand">
+      <div class="brand-line">ISO 9001 · Documented Information</div>
+      <h1>表單填寫系統</h1>
+      <p data-company>彰全企業</p>
+    </div>
+    <div class="header-meta">
+      <div><span class="dot"></span><span data-updated>管制版本</span></div>
+      <div>表單版本以文件管制總表為準</div>
+    </div>
+  </div>
+</header>
+
+<div class="toolbar">
+  <div class="toolbar-inner">
+    <nav class="tabs" data-nav aria-label="表單切換"></nav>
+    <div class="actions">
+      <button type="button" class="btn" data-act="save">儲存草稿</button>
+      <button type="button" class="btn" data-act="check">檢查必填</button>
+      <button type="button" class="btn" data-act="export">匯出 JSON</button>
+      <label class="btn file-btn">載入 JSON<input type="file" accept="application/json,.json" data-import></label>
+      <button type="button" class="btn btn-primary" data-act="print">列印／存 PDF</button>
+      <button type="button" class="btn btn-ghost" data-act="clear">清除草稿</button>
+    </div>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress"><span data-progress></span></div>
+    <span class="progress-label" data-progress-label>0% 完成</span>
+    <span class="status" data-status>尚未填寫</span>
+  </div>
+</div>
+
+<main data-main></main>
+
+<footer class="app-foot">
+  <span>彰全企業 · ISO 9001 表單管制｜版次異動須同步 docs/文件管制總表.csv 與 docs/版本歷程總表.md</span>
+  <span>資料僅存於本機瀏覽器，未上傳伺服器</span>
+</footer>
+
+<script src="assets/forms.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
