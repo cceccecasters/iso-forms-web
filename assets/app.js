@@ -323,8 +323,10 @@
       localStorage.setItem(draftKey(f.id), JSON.stringify(payload));
       state.savedAt = new Date();
       var el = document.querySelector("[data-status]");
-      // 必填警告優先，避免自動存檔把提示蓋掉
-      if (!(el && el.classList.contains("warn"))) setStatus("草稿已儲存 " + nowLabel(), "ok");
+      // 必填警告與「紀錄已儲存」優先，避免自動存檔把提示蓋掉
+      if (!(el && el.classList.contains("warn")) && Date.now() > (state.stickyUntil || 0)) {
+        setStatus("草稿已儲存 " + nowLabel(), "ok");
+      }
     } catch (e) {
       setStatus("草稿儲存失敗（可能超過瀏覽器容量）", "warn");
     }
@@ -435,6 +437,145 @@
     reader.readAsText(file);
   }
 
+  /* ---------- 紀錄儲存 ---------- */
+  var STORE = window.ISOStore;
+  var drawerRecords = [];
+
+  function metaOf(values) {
+    return {
+      no: values["s0.no"] || "",
+      applyDate: values["s0.applyDate"] || "",
+      applicant: values["s0.applicant"] || "",
+      dept: values["s0.dept"] || "",
+      product: values["s0.product"] || "",
+      itemNo: values["s0.itemNo"] || ""
+    };
+  }
+
+  function saveRecord() {
+    var f = formById(state.current);
+    var card = document.querySelector('[data-form="' + f.id + '"]');
+    var noInput = card.querySelector('[data-k="s0.no"]');
+    // 沒有單號就自動取號，避免紀錄無法識別
+    if (noInput && !String(noInput.value || "").trim()) {
+      noInput.value = nextSerial(f.prefix);
+      renderProgress(f.id);
+    }
+    var values = collect(f.id);
+    var m = metaOf(values);
+    var rec = {
+      form: f.id, title: f.title, version: f.version, effective: f.effective,
+      values: values, files: state.files,
+      no: m.no, applyDate: m.applyDate, applicant: m.applicant, dept: m.dept, product: m.product
+    };
+    setStatus("儲存中…", "");
+    STORE.save(rec).then(function (saved) {
+      refreshCount();
+      setStatus("紀錄已儲存 " + (saved.no || ""), "ok");
+      state.stickyUntil = Date.now() + 5000;
+    }).catch(function () {
+      setStatus("紀錄儲存失敗", "warn");
+    });
+  }
+
+  function refreshCount() {
+    var badge = document.querySelector("[data-count]");
+    if (!badge || !STORE) return;
+    STORE.list(state.current).then(function (rows) {
+      badge.textContent = rows.length;
+    });
+  }
+
+  function openDrawer() {
+    var f = formById(state.current);
+    document.querySelector("[data-drawer]").hidden = false;
+    document.querySelector("[data-drawer-title]").textContent = f.title + " · 歷史紀錄";
+    document.querySelector("[data-drawer-sub]").textContent =
+      f.id + "　版次 " + f.version + "　（" + ((window.ISO_CONFIG || {}).remoteUrl ? "雲端＋本機" : "僅本機") + "）";
+    document.querySelector("[data-record-search]").value = "";
+    loadRecords();
+  }
+
+  function closeDrawer() {
+    document.querySelector("[data-drawer]").hidden = true;
+  }
+
+  function loadRecords() {
+    var box = document.querySelector("[data-record-list]");
+    if (!box) return;
+    box.innerHTML = '<p class="drawer-empty">載入中…</p>';
+    STORE.list(state.current).then(function (rows) {
+      drawerRecords = rows;
+      renderRecords();
+    });
+  }
+
+  function renderRecords() {
+    var box = document.querySelector("[data-record-list]");
+    var q = String((document.querySelector("[data-record-search]") || {}).value || "").trim().toLowerCase();
+    var rows = drawerRecords.filter(function (r) {
+      if (!q) return true;
+      return [r.no, r.applicant, r.product, r.applyDate, r.dept].join(" ").toLowerCase().indexOf(q) > -1;
+    });
+    document.querySelector("[data-drawer-count]").textContent = rows.length + " 筆";
+    if (!rows.length) {
+      box.innerHTML = '<p class="drawer-empty">' + (q ? "沒有符合「" + esc(q) + "」的紀錄" : "尚無紀錄，填完表單按「儲存紀錄」即可建立。") + "</p>";
+      return;
+    }
+    box.innerHTML = rows.map(function (r) {
+      var outdated = r.version !== formById(r.form).version;
+      return '<article class="rec" data-rid="' + esc(r.rid) + '">' +
+        '<div class="rec-main">' +
+        '<div class="rec-no">' + esc(r.no || "（未取號）") +
+        (outdated ? '<span class="rec-tag">舊版次 ' + esc(r.version) + "</span>" : "") + "</div>" +
+        '<div class="rec-meta">' + esc([r.applyDate, r.applicant, r.dept, r.product].filter(Boolean).join(" · ") || "—") + "</div>" +
+        "</div>" +
+        '<div class="rec-time">' + esc(fmtTime(r.updatedAt)) + "</div>" +
+        '<div class="rec-ops">' +
+        '<button type="button" class="btn btn-sm" data-rec-open="' + esc(r.rid) + '">開啟</button>' +
+        '<button type="button" class="btn btn-sm" data-rec-print="' + esc(r.rid) + '">列印</button>' +
+        '<button type="button" class="btn btn-sm" data-rec-export="' + esc(r.rid) + '">匯出</button>' +
+        '<button type="button" class="btn btn-sm btn-danger" data-rec-del="' + esc(r.rid) + '">刪除</button>' +
+        "</div></article>";
+    }).join("");
+  }
+
+  function fmtTime(iso) {
+    if (!iso) return "";
+    var d = new Date(iso);
+    var p = function (n) { return (n < 10 ? "0" : "") + n; };
+    return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + " " + p(d.getHours()) + ":" + p(d.getMinutes());
+  }
+
+  function findRecord(rid) {
+    return drawerRecords.filter(function (r) { return r.rid === rid; })[0];
+  }
+
+  function loadRecordIntoForm(rec) {
+    show(rec.form);
+    state.files = rec.files || {};
+    restore(rec.form, rec.values || {});
+    renderProgress(rec.form);
+    if (rec.version !== formById(rec.form).version) {
+      setStatus("此紀錄為 v" + rec.version + "，現行表單為 v" + formById(rec.form).version, "warn");
+    } else {
+      setStatus("已載入紀錄 " + (rec.no || ""), "ok");
+    }
+  }
+
+  function exportRecord(rec) {
+    var payload = {
+      form: rec.form, title: rec.title, version: rec.version, effective: rec.effective,
+      savedAt: rec.updatedAt, values: rec.values, files: rec.files
+    };
+    var blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = rec.form + "_" + (rec.no || rec.rid) + ".json";
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  }
+
   /* ---------- routing ---------- */
   function show(id) {
     state.current = id;
@@ -449,6 +590,7 @@
     if (!loadDraft(id)) setStatus("尚未填寫", "");
     else setStatus("已載入本機草稿", "ok");
     renderProgress(id);
+    refreshCount();
     window.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
   }
 
@@ -520,6 +662,43 @@
     var f = formById(state.current);
     var d = document.querySelector('[data-form="' + f.id + '"] [data-k="s0.applyDate"]');
     if (d && !d.value) d.value = today();
+
+    on("[data-act='record']", "click", saveRecord);
+    on("[data-act='history']", "click", openDrawer);
+    document.querySelectorAll("[data-drawer-close]").forEach(function (el) {
+      el.addEventListener("click", closeDrawer);
+    });
+    on("[data-record-search]", "input", renderRecords);
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && !document.querySelector("[data-drawer]").hidden) closeDrawer();
+    });
+
+    on("[data-record-list]", "click", function (e) {
+      var open = e.target.closest("[data-rec-open]");
+      var print = e.target.closest("[data-rec-print]");
+      var exp = e.target.closest("[data-rec-export]");
+      var del = e.target.closest("[data-rec-del]");
+      var rec;
+      if (open) {
+        rec = findRecord(open.getAttribute("data-rec-open"));
+        if (rec) { loadRecordIntoForm(rec); closeDrawer(); }
+      } else if (print) {
+        rec = findRecord(print.getAttribute("data-rec-print"));
+        if (rec) { loadRecordIntoForm(rec); closeDrawer(); setTimeout(function () { window.print(); }, 120); }
+      } else if (exp) {
+        rec = findRecord(exp.getAttribute("data-rec-export"));
+        if (rec) exportRecord(rec);
+      } else if (del) {
+        rec = findRecord(del.getAttribute("data-rec-del"));
+        if (rec && confirm("刪除紀錄 " + (rec.no || rec.rid) + "？此動作無法復原。")) {
+          STORE.remove(rec.rid).then(function () { loadRecords(); refreshCount(); });
+        }
+      }
+    });
+
+    var note = document.querySelector("[data-storage-note]");
+    if (note) note.textContent = (window.ISO_CONFIG || {}).remoteUrl ? "紀錄同步至雲端並保留本機副本" : "紀錄儲存於本機瀏覽器";
+    refreshCount();
 
     on("[data-act='save']", "click", saveNow);
     on("[data-act='print']", "click", function () { saveNow(); window.print(); });
