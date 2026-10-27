@@ -621,7 +621,7 @@
     });
     if (location.hash.slice(1) !== id) history.replaceState(null, "", "#" + id);
     var f = formById(id);
-    document.title = f.id + " " + f.title + " · " + META.system;
+    document.title = f.id + " " + f.title + " · " + META.companyCN;
     state.files = {};
     state.editingRid = null;
     if (!loadDraft(id)) setStatus("尚未填寫", "");
