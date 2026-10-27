@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/styles.css">
+<link rel="stylesheet" href="assets/drawer.css">
 </head>
 <body>
 
@@ -31,6 +32,8 @@
   <div class="toolbar-inner">
     <nav class="tabs" data-nav aria-label="表單切換"></nav>
     <div class="actions">
+      <button type="button" class="btn btn-primary" data-act="record">儲存紀錄</button>
+      <button type="button" class="btn" data-act="history">歷史紀錄 <span class="badge" data-count>0</span></button>
       <button type="button" class="btn" data-act="save">儲存草稿</button>
       <button type="button" class="btn" data-act="check">檢查必填</button>
       <button type="button" class="btn" data-act="export">匯出 JSON</button>
@@ -50,10 +53,30 @@
 
 <footer class="app-foot">
   <span>彰全企業 · ISO 9001 表單管制｜版次異動須同步 docs/文件管制總表.csv 與 docs/版本歷程總表.md</span>
-  <span>資料僅存於本機瀏覽器，未上傳伺服器</span>
+  <span data-storage-note>紀錄儲存於本機瀏覽器</span>
 </footer>
 
+<div class="drawer" data-drawer hidden>
+  <div class="drawer-mask" data-drawer-close></div>
+  <aside class="drawer-panel" role="dialog" aria-label="歷史紀錄">
+    <div class="drawer-head">
+      <div>
+        <h2 data-drawer-title>歷史紀錄</h2>
+        <p class="drawer-sub" data-drawer-sub></p>
+      </div>
+      <button type="button" class="btn btn-ghost" data-drawer-close>關閉</button>
+    </div>
+    <div class="drawer-tools">
+      <input type="search" data-record-search placeholder="搜尋單號、申請人、產品…" aria-label="搜尋紀錄">
+      <span class="drawer-count" data-drawer-count></span>
+    </div>
+    <div class="drawer-body" data-record-list></div>
+  </aside>
+</div>
+
+<script src="assets/config.js"></script>
 <script src="assets/forms.js"></script>
+<script src="assets/storage.js"></script>
 <script src="assets/app.js"></script>
 </body>
 </html>
