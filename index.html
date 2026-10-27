@@ -82,9 +82,9 @@
 (function () {
   var SEEN = "2026-10-27.2";
   fetch("version.json?t=" + Date.now(), { cache: "no-store" })
-    .then(function (r) { return r.json(); })
+    .then(function (r) { if (!r.ok) throw new Error("no version"); return r.json(); })
     .then(function (d) {
-      if (d.v !== SEEN && !sessionStorage.getItem("iso:reloaded")) {
+      if (d && d.v && d.v !== SEEN && !sessionStorage.getItem("iso:reloaded")) {
         sessionStorage.setItem("iso:reloaded", "1");
         location.reload();
       }
