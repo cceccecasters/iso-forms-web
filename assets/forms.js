@@ -39,7 +39,12 @@ window.ISO_FORMS = [
     effective: "2026-10-27",
     clause: "ISO 9001:2015 §8.5.6 變更管制",
     purpose: "模具尺寸、結構、材質變更之申請、評估、驗證與核准",
-    sections: [
+        listFields: [
+      { k: "s0.product", l: "產品名稱" },
+      { k: "s0.itemNo", l: "廠內料號" },
+      { k: "s0.moldNo", l: "模具編號" }
+    ],
+sections: [
       {
         h: "一、基本資料",
         type: "pairs",
@@ -109,7 +114,12 @@ window.ISO_FORMS = [
     effective: "2026-10-27",
     clause: "ISO 9001:2015 §8.1 作業規劃與管制、§8.5.6 變更管制",
     purpose: "製程參數、設備、治具、作業順序變更之 4M1E 評估與驗證",
-    sections: [
+        listFields: [
+      { k: "s0.process", l: "製程名稱" },
+      { k: "s0.station", l: "工作站／機台" },
+      { k: "s0.product", l: "產品名稱" }
+    ],
+sections: [
       {
         h: "一、基本資料",
         type: "pairs",
@@ -191,7 +201,13 @@ window.ISO_FORMS = [
     clause: "ISO 9001:2015 §8.6 產品與服務之放行、§8.7 不符合輸出之管制",
     purpose: "偏離規格品之讓步接收、客戶同意與出貨條件管制",
     usage: "產品偏離規格或客戶要求，經評估可讓步接收並須取得客戶同意後出貨者。",
-    sections: [
+        listFields: [
+      { k: "s0.product", l: "產品名稱" },
+      { k: "s0.customer", l: "客戶名稱" },
+      { k: "s0.lot", l: "批號／製造日期" }
+    ],
+    applicantKey: "s7.sign.0.name",
+sections: [
       {
         h: "一、基本資料",
         type: "pairs",
