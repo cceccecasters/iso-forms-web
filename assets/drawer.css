@@ -165,6 +165,11 @@
   .drawer-tools { padding: 10px 14px; }
   .drawer-body { padding: 8px 10px 20px; }
   .rec { padding: 10px; }
-  .rec-time { display: none; }
+  .rec-time {
+    grid-column: 1 / -1;
+    grid-row: auto;
+    display: block;
+    margin-top: 2px;
+  }
   .rec-meta { white-space: normal; }
 }
