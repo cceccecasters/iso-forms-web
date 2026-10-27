@@ -470,9 +470,17 @@
     };
     setStatus("儲存中…", "");
     STORE.save(rec).then(function (saved) {
-      refreshCount();
-      setStatus("紀錄已儲存 " + (saved.no || ""), "ok");
-      state.stickyUntil = Date.now() + 5000;
+      // 寫入後回讀確認，避免儲存空間異常時靜默失敗
+      return STORE.list(rec.form).then(function (rows) {
+        refreshCount();
+        var ok = rows.some(function (r) { return r.rid === saved.rid; });
+        if (ok) {
+          setStatus("紀錄已儲存 " + (saved.no || ""), "ok");
+          state.stickyUntil = Date.now() + 5000;
+        } else {
+          setStatus("紀錄未寫入，請重新載入頁面後再試", "warn");
+        }
+      });
     }).catch(function () {
       setStatus("紀錄儲存失敗", "warn");
     });
