@@ -7,7 +7,7 @@
   var META = window.ISO_META;
   var FORMS = window.ISO_FORMS;
   var HISTORY = window.ISO_HISTORY;
-  var FILE_LIMIT = 2 * 1024 * 1024;
+  var FILE_LIMIT = 1024 * 1024;
 
   var state = { current: FORMS[0].id, files: {}, savedAt: null };
 
@@ -49,6 +49,18 @@
     if (opts.type === "date") return '<input type="date"' + common + ' value="' + esc(opts.value || "") + '"' + reqAttr + ">";
     if (opts.type === "number") return '<input type="number" inputmode="decimal"' + common + ' placeholder="' + esc(opts.ph || "") + '">';
     return '<input type="text"' + common + ' placeholder="' + esc(opts.ph || "") + '"' + reqAttr + ">";
+  }
+
+  // 照片欄：每列獨立上傳，dataURL 存在 state.files，列印與匯出時一併帶出
+  function photoCell(path) {
+    return '<div class="photo-cell">' +
+      '<label class="img-drop img-drop-sm">' +
+      '<input type="file" accept="image/*" data-img="' + esc(path) + '">' +
+      '<span class="img-hint">＋ 照片</span>' +
+      '<img alt="照片預覽" hidden data-preview="' + esc(path) + '">' +
+      "</label>" +
+      '<button type="button" class="img-clear" data-clear-img="' + esc(path) + '" hidden>移除</button>' +
+      "</div>";
   }
 
   function radioGroup(f, path, options, cls) {
@@ -115,17 +127,19 @@
 
     grid: function (f, s, si) {
       var head = "<tr>" + s.cols.map(function (c) { return "<th>" + esc(c) + "</th>"; }).join("") + "</tr>";
+      var textCols = s.photo ? s.cols.length - 1 : s.cols.length;
       var body = "";
       for (var i = 0; i < s.rows; i++) {
         body += "<tr>";
         body += '<td class="num">' + (i + 1) + "</td>";
-        for (var j = 1; j < s.cols.length; j++) {
+        for (var j = 1; j < textCols; j++) {
           var p = "s" + si + "." + s.k + "." + (i + 1) + "." + j;
           body += "<td>" + input(f, p, {}) + "</td>";
         }
+        if (s.photo) body += '<td class="cell-photo">' + photoCell("s" + si + "." + s.k + "." + (i + 1) + ".img") + "</td>";
         body += "</tr>";
       }
-      return '<table class="tbl tbl-grid"><thead>' + head + "</thead><tbody>" + body + "</tbody></table>";
+      return '<table class="tbl tbl-grid' + (s.photo ? " has-photo" : "") + '"><thead>' + head + "</thead><tbody>" + body + "</tbody></table>";
     },
 
     assess: function (f, s, si) {
@@ -286,7 +300,12 @@
     });
     card.querySelectorAll("[data-preview]").forEach(function (img) {
       var kk = img.getAttribute("data-preview");
-      if (state.files[kk]) { img.src = state.files[kk]; img.hidden = false; }
+      if (state.files[kk]) {
+        img.src = state.files[kk];
+        img.hidden = false;
+        var clr = card.querySelector('[data-clear-img="' + kk + '"]');
+        if (clr) clr.hidden = false;
+      }
     });
   }
 
@@ -461,6 +480,18 @@
     });
 
     main.addEventListener("click", function (e) {
+      var del = e.target.closest("[data-clear-img]");
+      if (del) {
+        var dk = del.getAttribute("data-clear-img");
+        delete state.files[dk];
+        var img = document.querySelector('[data-preview="' + dk + '"]');
+        if (img) { img.hidden = true; img.removeAttribute("src"); }
+        var picker = document.querySelector('[data-img="' + dk + '"]');
+        if (picker) picker.value = "";
+        del.hidden = true;
+        saveNow();
+        return;
+      }
       var b = e.target.closest("[data-serial]");
       if (b) {
         var path = b.getAttribute("data-target");
@@ -518,6 +549,8 @@
       state.files[keyName] = reader.result;
       var img = document.querySelector('[data-preview="' + keyName + '"]');
       if (img) { img.src = reader.result; img.hidden = false; }
+      var clr = document.querySelector('[data-clear-img="' + keyName + '"]');
+      if (clr) clr.hidden = false;
       saveNow();
     };
     reader.readAsDataURL(file);
