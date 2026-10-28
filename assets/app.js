@@ -142,6 +142,27 @@
       return '<table class="tbl tbl-grid' + (s.photo ? " has-photo" : "") + '"><thead>' + head + "</thead><tbody>" + body + "</tbody></table>";
     },
 
+    // 通用表格：欄位可為固定列名(static)、流水號(num)、單選(opts) 或文字輸入
+    table: function (f, s, si) {
+      var head = "<tr>" + s.cols.map(function (c) {
+        return "<th" + (c.w ? ' style="width:' + c.w + '"' : "") + ">" + esc(c.l) + "</th>";
+      }).join("") + "</tr>";
+      var body = "";
+      for (var i = 0; i < s.rows; i++) {
+        body += "<tr>";
+        for (var j = 0; j < s.cols.length; j++) {
+          var c = s.cols[j];
+          var p = "s" + si + "." + s.k + "." + i + "." + j;
+          if (c.num) body += '<td class="num">' + (i + 1) + "</td>";
+          else if (c.static) body += "<td>" + esc((s.rowLabels && s.rowLabels[i]) || c.l) + "</td>";
+          else if (c.opts) body += "<td>" + radioGroup(f, p, c.opts) + "</td>";
+          else body += "<td>" + input(f, p, { type: c.t, ph: c.ph }) + "</td>";
+        }
+        body += "</tr>";
+      }
+      return '<table class="tbl tbl-grid"><thead>' + head + "</thead><tbody>" + body + "</tbody></table>";
+    },
+
     assess: function (f, s, si) {
       var body = s.items.map(function (it, i) {
         var p = "s" + si + "." + s.k + "." + i;
@@ -374,6 +395,14 @@
       if (label) label.textContent = pct + "% 完成";
     }
   }
+  function hasMissingRequired(card) {
+    var miss = false;
+    card.querySelectorAll("[data-req]").forEach(function (el) {
+      if (!String(el.value || "").trim()) miss = true;
+    });
+    return miss;
+  }
+
   function validate() {
     var card = document.querySelector('[data-form="' + state.current + '"]');
     var missing = [];
@@ -463,6 +492,14 @@
       noInput.value = nextSerial(f.prefix);
       renderProgress(f.id);
     }
+    // 必填未完成就不寫入雲端，避免產生沒有申請人的無效紀錄
+    if (hasMissingRequired(card)) {
+      validate();
+      setStatus("尚有必填欄位，補齊後再儲存", "warn");
+      state.stickyUntil = Date.now() + 5000;
+      return;
+    }
+
     var values = collect(f.id);
     var m = metaOf(values, f);
     var rec = {
@@ -626,6 +663,13 @@
     state.editingRid = null;
     if (!loadDraft(id)) setStatus("尚未填寫", "");
     else setStatus("已載入本機草稿", "ok");
+
+    // 申請日期未填時預設當日，避免每次都要手動選
+    var dEl = card.querySelector('[data-k="s0.applyDate"]');
+    if (dEl && !dEl.value) {
+      dEl.value = today();
+      saveNow();
+    }
     renderProgress(id);
     refreshCount();
     window.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
