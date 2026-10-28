@@ -665,7 +665,7 @@
     else setStatus("已載入本機草稿", "ok");
 
     // 申請日期未填時預設當日，避免每次都要手動選
-    var dEl = card.querySelector('[data-k="s0.applyDate"]');
+    var dEl = document.querySelector('[data-form="' + id + '"] [data-k="s0.applyDate"]');
     if (dEl && !dEl.value) {
       dEl.value = today();
       saveNow();
