@@ -714,6 +714,9 @@
 
   /* ---------- routing ---------- */
   function show(id) {
+    // 未知的 id 一律回到第一張，否則所有表單都會被隱藏（整頁空白）
+    var fCheck = formById(id);
+    if (fCheck.id !== id) id = fCheck.id;
     state.current = id;
     document.querySelectorAll(".doc").forEach(function (d) { d.hidden = d.getAttribute("data-form") !== id; });
     document.querySelectorAll("[data-tab]").forEach(function (t) {
@@ -923,7 +926,11 @@
     window.addEventListener("hashchange", function () {
       var h = location.hash.slice(1);
       if (!h) return;
-      if (!formById(h)) { show(state.current); return; }  // 無效 hash 不切換，維持現有表單
+      var known = FORMS.some(function (f) { return f.id === h; });
+      if (!known) {  // 無效 hash：留在原表單並把網址改回有效值
+        history.replaceState(null, "", "#" + state.current);
+        return;
+      }
       if (h !== state.current) show(h);
     });
   }
