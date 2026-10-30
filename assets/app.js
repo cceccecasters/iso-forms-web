@@ -32,6 +32,25 @@
   }
 
   /* ---------- serial ---------- */
+  // IndexedDB 被其他分頁佔用時 open/讀取可能永不回應，一律加逾時避免整站卡住
+  function withTimeout(p, ms, tag) {
+    return new Promise(function (resolve, reject) {
+      var done = false;
+      var t = setTimeout(function () {
+        if (done) return;
+        done = true;
+        reject(new Error(tag || "timeout"));
+      }, ms);
+      p.then(function (v) {
+        if (done) return;
+        done = true; clearTimeout(t); resolve(v);
+      }, function (e) {
+        if (done) return;
+        done = true; clearTimeout(t); reject(e);
+      });
+    });
+  }
+
   // 取號 = 歷史紀錄現有最大號 + 1。純計算、不自增計數器，
   // 所以連續點「取號」會停在同一號，存檔後才會推進。
   function serialOf(no, prefix, year) {
@@ -42,7 +61,9 @@
   function nextSerial(prefix) {
     var year = new Date().getFullYear();
     var f = FORMS.filter(function (x) { return x.prefix === prefix; })[0];
-    var rowsP = (window.ISOStore && f) ? window.ISOStore.list(f.id) : Promise.resolve([]);
+    var rowsP = (window.ISOStore && f)
+      ? withTimeout(window.ISOStore.list(f.id), 8000, "serial timeout")
+      : Promise.resolve([]);
     return rowsP.then(function (rows) {
       var max = 0;
       (rows || []).forEach(function (r) {
@@ -505,11 +526,17 @@
     // 沒有單號就自動取號，避免紀錄無法識別
     var ready = (noInput && !String(noInput.value || "").trim())
       ? nextSerial(f.prefix).then(function (no) {
+          if (!no) throw new Error("serial failed");
           noInput.value = no;
           renderProgress(f.id);
         })
       : Promise.resolve();
-    ready.then(function () { commitRecord(f, card, noInput); });
+    ready.then(function () {
+      return commitRecord(f, card, noInput);
+    }).catch(function () {
+      setStatus("儲存逾時或取號失敗，請重新整理後再試", "warn");
+      state.stickyUntil = Date.now() + 7000;
+    });
   }
 
   function commitRecord(f, card, noInput) {
@@ -589,9 +616,13 @@
     var box = document.querySelector("[data-record-list]");
     if (!box) return;
     box.innerHTML = '<p class="drawer-empty">載入中…</p>';
-    STORE.list(state.current).then(function (rows) {
+    withTimeout(STORE.list(state.current), 12000, "list timeout").then(function (rows) {
       drawerRecords = rows;
       renderRecords();
+    }).catch(function () {
+      drawerRecords = [];
+      box.innerHTML = '<p class="drawer-empty">讀取逾時：請關閉其他分頁後按「重新整理」。</p>';
+    }).then(function () {
       var btn = document.querySelector("[data-record-reload]");
       if (btn) btn.disabled = false;
     });
