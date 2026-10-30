@@ -127,8 +127,11 @@ main { position: relative; z-index: 1; }
 
 .tabs {
   display: flex;
+  flex-wrap: nowrap;
+  min-width: 0;
   gap: 6px;
   overflow-x: auto;
+  overflow-y: hidden;
   scrollbar-width: thin;
   padding-bottom: 2px;
   max-width: 100%;
@@ -652,4 +655,13 @@ input.is-invalid, textarea.is-invalid { border-color: var(--danger); background:
   .extra-row, .other-impact, .tbl-meta th, .tbl thead th, .tbl .row-h { background: #fff !important; }
   .img-drop { border: 0.5pt solid #bbb; min-height: 90px; }
   .no-print { display: none !important; }
+}
+
+/* 表單數量多時，頁籤固定單列橫向捲動，避免換行撐高工具列 */
+.tab { max-width: 240px; }
+.tab-name {
+  max-width: 132px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
