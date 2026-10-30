@@ -676,7 +676,7 @@ sections: [
     ],
     sections: [
       { h: "一、基本資料", type: "pairs", rows: [[{ k: "no", l: "客訴單號", serial: true }, { k: "cdate", l: "受理日期", t: "date", req: true }], [{ k: "cust", l: "客戶名稱", req: true }, { k: "contact", l: "客戶聯絡人" }], [{ k: "cordno", l: "客戶單號" }, { k: "product", l: "產品名稱" }], [{ k: "lot", l: "批號／序號" }, { k: "shipdate", l: "出貨日期", t: "date" }], [{ k: "qty", l: "數量（pcs）" }, { k: "receive", l: "受理人" }]] },
-      { h: "二、客訴類別", type: "checks", k: "c1", items: ["品質", "交期", "包裝", "標示／文件", "運輸損壞", "服務", "其他"], other: true },
+      { h: "二、客訴類別", type: "checks", k: "c1", items: ["品質", "交期", "包裝", "標示／文件", "運輸損壞", "服務"], other: true },
       { h: "三、客訴內容", type: "textarea", k: "x1", rows: 3, hint: "客戶描述之現象、發生時間、影響範圍" },
       { h: "四、客訴判定", type: "table", k: "t1", rows: 2, rowLabels: ["判定理由", "責任歸屬"], cols: [{ l: "項目", w: "26%", static: true }, { l: "內容" }] },
       { h: "", type: "table", k: "t1b", rows: 1, rowLabels: ["客訴是否成立"], cols: [{ l: "項目", w: "26%", static: true }, { l: "說明" }, { l: "結果", w: "24%", opts: ["成立", "不成立", "待確認"] }] },
