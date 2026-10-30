@@ -447,6 +447,7 @@
 
   function validate() {
     var card = document.querySelector('[data-form="' + state.current + '"]');
+    if (!card) return false;
     var missing = [];
     card.querySelectorAll("[data-req]").forEach(function (el) { el.classList.remove("is-invalid"); });
     card.querySelectorAll("[data-req]").forEach(function (el) {
@@ -921,7 +922,9 @@
 
     window.addEventListener("hashchange", function () {
       var h = location.hash.slice(1);
-      if (h && h !== state.current) show(h);
+      if (!h) return;
+      if (!formById(h)) { show(state.current); return; }  // 無效 hash 不切換，維持現有表單
+      if (h !== state.current) show(h);
     });
   }
 
