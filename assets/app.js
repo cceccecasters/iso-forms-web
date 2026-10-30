@@ -746,8 +746,12 @@
         var el = document.querySelector('[data-form="' + state.current + '"] [data-k="' + path + '"]');
         if (el) {
           b.disabled = true;
+          var ph = el.getAttribute("placeholder");
+          if (!el.value) el.setAttribute("placeholder", "取號中…");
+          setStatus("取號中…", "");
           nextSerial(b.getAttribute("data-serial")).then(function (no) {
             b.disabled = false;
+            if (ph !== null) el.setAttribute("placeholder", ph);
             if (!no) {
               setStatus("取號失敗：無法讀取歷史紀錄，請確認網路後再試", "warn");
               state.stickyUntil = Date.now() + 6000;
