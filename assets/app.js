@@ -570,6 +570,8 @@
     STORE.list(state.current).then(function (rows) {
       drawerRecords = rows;
       renderRecords();
+      var btn = document.querySelector("[data-record-reload]");
+      if (btn) btn.disabled = false;
     });
   }
 
@@ -598,7 +600,8 @@
       return '<article class="rec" data-rid="' + esc(r.rid) + '">' +
         '<div class="rec-main">' +
         '<div class="rec-no">' + esc(r.no || "（未取號）") +
-        (outdated ? '<span class="rec-tag">舊版次 ' + esc(r.version) + "</span>" : "") + "</div>" +
+        (outdated ? '<span class="rec-tag">舊版次 ' + esc(r.version) + "</span>" : "") +
+        (r.pendingSync ? '<span class="rec-tag rec-tag-warn">未同步</span>' : "") + "</div>" +
         '<div class="rec-meta">' + esc(f.title) + "　" + esc([r.applyDate, r.applicant, r.dept].filter(Boolean).join(" · ") || "—") + "</div>" +
         "</div>" +
         '<div class="rec-time">' + esc(fmtTime(r.updatedAt)) + "</div>" +
@@ -751,6 +754,11 @@
       el.addEventListener("click", closeDrawer);
     });
     on("[data-record-search]", "input", renderRecords);
+    on("[data-record-reload]", "click", function () {
+      var btn = document.querySelector("[data-record-reload]");
+      if (btn) btn.disabled = true;
+      loadRecords();
+    });
     document.addEventListener("keydown", function (e) {
       if (e.key === "Escape" && !document.querySelector("[data-drawer]").hidden) closeDrawer();
     });
@@ -772,8 +780,18 @@
         if (rec) exportRecord(rec);
       } else if (del) {
         rec = findRecord(del.getAttribute("data-rec-del"));
-        if (rec && confirm("刪除紀錄 " + (rec.no || rec.rid) + "？此動作無法復原。")) {
-          STORE.remove(rec.rid).then(function () { loadRecords(); refreshCount(); });
+        if (rec && confirm("刪除紀錄 " + (rec.no || rec.rid) + "？此動作無法復原，其他同事下次開啟時也會消失。")) {
+          STORE.remove(rec.rid).then(function (ok) {
+            if (!ok) {
+              setStatus("刪除失敗：雲端未回應，請確認網路後再試", "warn");
+              state.stickyUntil = Date.now() + 6000;
+              return;
+            }
+            setStatus("已刪除紀錄 " + (rec.no || ""), "ok");
+            state.stickyUntil = Date.now() + 4000;
+            loadRecords();
+            refreshCount();
+          });
         }
       }
     });
