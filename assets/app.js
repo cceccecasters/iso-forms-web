@@ -753,6 +753,23 @@
     main.addEventListener("input", function (e) {
       if (e.target.matches("[data-k]")) { scheduleSave(); renderProgress(state.current); }
     });
+    // 單選項目再點一次可取消（原本選了就必須換頁才會清掉）
+    var radioWasOn = false;
+    main.addEventListener("mousedown", function (e) {
+      radioWasOn = e.target.matches && e.target.matches('input[type="radio"]') ? e.target.checked : false;
+    }, true);
+    main.addEventListener("click", function (e) {
+      var r = e.target;
+      if (!r.matches || !r.matches('input[type="radio"]') || !radioWasOn) return;
+      var all = main.querySelectorAll('input[type="radio"]');
+      for (var i = 0; i < all.length; i++) {
+        if (all[i].name === r.name) all[i].checked = false;
+      }
+      radioWasOn = false;
+      scheduleSave();
+      renderProgress(state.current);
+    }, true);
+
     main.addEventListener("change", function (e) {
       if (e.target.matches('input[type="checkbox"],input[type="radio"],select')) { scheduleSave(); renderProgress(state.current); }
       if (e.target.matches("[data-img]")) handleImage(e.target);
