@@ -193,7 +193,12 @@
           if (!res || !res.ok || !res.records) return sortDesc(mine);
 
           var byId = {};
-          res.records.forEach(function (r) { byId[r.rid] = r; });
+          res.records.forEach(function (r) {
+            byId[r.rid] = r;
+            // 雲端資料寫回本機當快取，斷網時仍看得到既有紀錄
+            r.pendingSync = false;
+            putLocal(r);
+          });
 
           // 雲端為準；只補上「離線新增、還沒上雲」的紀錄
           var pending = mine.filter(function (m) {
