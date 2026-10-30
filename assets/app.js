@@ -19,7 +19,6 @@
   }
   function key(formId, path) { return formId + "::" + path; }
   function draftKey(formId) { return "iso:draft:" + formId; }
-  function serialKey(prefix, year) { return "iso:serial:" + prefix + ":" + year; }
   function formById(id) {
     return FORMS.filter(function (f) { return f.id === id; })[0] || FORMS[0];
   }
@@ -33,11 +32,27 @@
   }
 
   /* ---------- serial ---------- */
+  // 取號 = 歷史紀錄現有最大號 + 1。純計算、不自增計數器，
+  // 所以連續點「取號」會停在同一號，存檔後才會推進。
+  function serialOf(no, prefix, year) {
+    var m = String(no || "").match(new RegExp("^" + prefix + "-" + year + "-(\\d+)$"));
+    return m ? parseInt(m[1], 10) : 0;
+  }
+
   function nextSerial(prefix) {
     var year = new Date().getFullYear();
-    var n = parseInt(localStorage.getItem(serialKey(prefix, year)) || "0", 10) + 1;
-    localStorage.setItem(serialKey(prefix, year), String(n));
-    return prefix + "-" + year + "-" + String(n).padStart(3, "0");
+    var f = FORMS.filter(function (x) { return x.prefix === prefix; })[0];
+    var rowsP = (window.ISOStore && f) ? window.ISOStore.list(f.id) : Promise.resolve([]);
+    return rowsP.then(function (rows) {
+      var max = 0;
+      (rows || []).forEach(function (r) {
+        var n = serialOf(r.no, prefix, year);
+        if (n > max) max = n;
+      });
+      return prefix + "-" + year + "-" + String(max + 1).padStart(3, "0");
+    }).catch(function () {
+      return "";
+    });
   }
 
   /* ---------- render helpers ---------- */
@@ -488,10 +503,16 @@
     var card = document.querySelector('[data-form="' + f.id + '"]');
     var noInput = card.querySelector('[data-k="s0.no"]');
     // 沒有單號就自動取號，避免紀錄無法識別
-    if (noInput && !String(noInput.value || "").trim()) {
-      noInput.value = nextSerial(f.prefix);
-      renderProgress(f.id);
-    }
+    var ready = (noInput && !String(noInput.value || "").trim())
+      ? nextSerial(f.prefix).then(function (no) {
+          noInput.value = no;
+          renderProgress(f.id);
+        })
+      : Promise.resolve();
+    ready.then(function () { commitRecord(f, card, noInput); });
+  }
+
+  function commitRecord(f, card, noInput) {
     // 必填未完成就不寫入雲端，避免產生沒有申請人的無效紀錄
     if (hasMissingRequired(card)) {
       validate();
@@ -513,16 +534,17 @@
     STORE.list(f.id).then(function (rows) {
       // 單號已被別筆紀錄用掉時，自動換新號，避免兩筆同號
       var dupe = rows.filter(function (r) { return m.no && r.no === m.no && r.rid !== rec.rid; })[0];
-      if (dupe) {
-        var fresh = nextSerial(f.prefix);
+      if (!dupe) return STORE.save(rec);
+      return nextSerial(f.prefix).then(function (fresh) {
+        if (!fresh) return STORE.save(rec);
         noInput.value = fresh;
         rec.no = fresh;
         rec.values["s0.no"] = fresh;
         renderProgress(f.id);
         state.editingRid = null;
         delete rec.rid;
-      }
-      return STORE.save(rec);
+        return STORE.save(rec);
+      });
     }).then(function (saved) {
       state.editingRid = saved.rid;
       // 寫入後回讀確認，避免儲存空間異常時靜默失敗
@@ -723,11 +745,20 @@
         var path = b.getAttribute("data-target");
         var el = document.querySelector('[data-form="' + state.current + '"] [data-k="' + path + '"]');
         if (el) {
-          el.value = nextSerial(b.getAttribute("data-serial"));
-          state.editingRid = null;  // 取新號 = 開新紀錄，不再覆蓋原紀錄
-          saveNow();
-          renderProgress(state.current);
-          setStatus("已取號 " + el.value, "ok");
+          b.disabled = true;
+          nextSerial(b.getAttribute("data-serial")).then(function (no) {
+            b.disabled = false;
+            if (!no) {
+              setStatus("取號失敗：無法讀取歷史紀錄，請確認網路後再試", "warn");
+              state.stickyUntil = Date.now() + 6000;
+              return;
+            }
+            el.value = no;
+            state.editingRid = null;  // 取新號 = 開新紀錄，不再覆蓋原紀錄
+            saveNow();
+            renderProgress(state.current);
+            setStatus("已取號 " + no + "（存檔後才會換下一號）", "ok");
+          });
         }
       }
     });
