@@ -301,6 +301,7 @@ main {
 /* ---------- sections ---------- */
 .sec { margin: 0 0 22px; break-inside: avoid; }
 
+.sec > h3:empty { display: none; }
 .sec h3 {
   font-family: var(--font-serif);
   font-size: 16px;
