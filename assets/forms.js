@@ -626,7 +626,7 @@ sections: [
       { h: "", type: "table", k: "j2", rows: 1, rowLabels: ["綜合判定"], cols: [{ l: "項目", w: "30%", static: true }, { l: "說明" }, { l: "判定", w: "18%", opts: ["合格", "不合格"] }] },
       { h: "五、不合格追溯與處置說明", type: "textarea", k: "x1", rows: 3, hint: "校正不合格時，說明受影響期間、批號、已量測產品之重驗或回收處置" },
       { h: "六、簽核", type: "sig", k: "g1", rows: ["校正人員", "品保主管"] },
-      { h: "八、版本歷程", type: "history" }
+      { h: "七、版本歷程", type: "history" }
     ]
   },
   {
@@ -654,7 +654,7 @@ sections: [
       { h: "", type: "table", k: "t3", rows: 1, rowLabels: ["有效性判定"], cols: [{ l: "項目", w: "26%", static: true }, { l: "說明" }, { l: "結果", w: "22%", opts: ["有效", "無效", "待觀察"] }] },
       { h: "八、結案說明", type: "textarea", k: "x4", rows: 2, hint: "是否需更新風險清單、作業標準或 FMEA" },
       { h: "九、簽核", type: "sig", k: "g1", rows: ["責任人", "責任主管", "品保主管", "管理者代表"] },
-      { h: "十一、版本歷程", type: "history" }
+      { h: "十、版本歷程", type: "history" }
     ]
   },
   {
@@ -681,7 +681,7 @@ sections: [
       { h: "六、原因分析與矯正措施", type: "pairs", rows: [[{ k: "cause", l: "原因分析" }, { k: "car", l: "矯正措施單號" }]] },
       { h: "七、客戶回覆", type: "pairs", rows: [[{ k: "replydate", l: "回覆日期", t: "date" }, { k: "replyby", l: "回覆人" }], [{ k: "custok", l: "客戶確認", req: true }, { k: "close", l: "結案日", t: "date" }]] },
       { h: "八、簽核", type: "sig", k: "g1", rows: ["業務", "品保", "廠長"], opinion: true },
-      { h: "十、版本歷程", type: "history" }
+      { h: "九、版本歷程", type: "history" }
     ]
   },
   {
@@ -755,7 +755,7 @@ sections: [
       { h: "五、評鑑結論", type: "checks", k: "c2", items: ["合格供應商", "條件合格（限期改善）", "不合格", "暫停交易"] },
       { h: "六、缺失與改善要求", type: "textarea", k: "x1", rows: 3, hint: "缺失項目、要求完成日、追蹤方式" },
       { h: "七、簽核", type: "sig", k: "g1", rows: ["評鑑人員", "採購", "品保主管", "廠長"] },
-      { h: "九、版本歷程", type: "history" }
+      { h: "八、版本歷程", type: "history" }
     ]
   },
   {
@@ -804,7 +804,7 @@ sections: [
       { h: "", type: "table", k: "t3", rows: 1, rowLabels: ["審查結論"], cols: [{ l: "項目", w: "22%", static: true }, { l: "說明" }, { l: "結果", w: "26%", opts: ["可接受", "有條件接受", "無法接受"] }] },
       { h: "四、要求變更記錄（8.2.4）", type: "textarea", k: "x1", rows: 3, hint: "變更項目、客戶文件編號、需更新之內部文件與版次" },
       { h: "五、簽核", type: "sig", k: "g1", rows: ["業務", "生管", "品保", "廠長"] },
-      { h: "七、版本歷程", type: "history" }
+      { h: "六、版本歷程", type: "history" }
     ]
   },
   {
