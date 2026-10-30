@@ -28,6 +28,9 @@ window.ISO_HISTORY = {
     ["1.0", "2026-10-22", "初版發行", ""],
     ["1.1", "2026-10-24", "修正版本歷程章節編號（十→九）；統一全形括號與標點", ""]
   ],
+  "FRM-QA-004": [
+    ["1.0", "2026-10-30", "初版發行：進料不合格品判定、授權與供應商矯正措施", ""]
+  ],
   "WF-QA-001": [
     ["1.0", "2026-10-24", "初版發行（將既有 Git 版控與發行做法書面化）", ""]
   ]
@@ -395,6 +398,156 @@ sections: [
         rows: ["申請人", "工程主管", "品保主管", "廠長／總經理"]
       },
       { h: "八、版本歷程", type: "history" }
+    ]
+  },
+  {
+    id: "FRM-QA-004",
+    title: "進料不合格品處理單",
+    prefix: "IQ",
+    version: "1.0",
+    effective: "2026-10-30",
+    clause: "ISO 9001:2015 §8.4.2 外部提供的過程、產品與服務之管制、§8.7.1 不符合輸出之管制、§10.2 不合格與矯正措施",
+    purpose: "收貨檢驗不合格之判定、授權放行與供應商矯正措施追溯",
+    usage: "收貨檢驗（IQC）判定不合格，或上線使用時發現原物料、委外加工品不符規格，須判定處理方式、留下授權紀錄並要求供應商矯正者。",
+    listFields: [
+      { k: "s0.product", l: "產品名稱" },
+      { k: "s0.supplier", l: "供應商名稱" },
+      { k: "s0.lot", l: "進料批號" }
+    ],
+    sections: [
+      {
+        h: "一、基本資料",
+        type: "pairs",
+        rows: [
+          [{ k: "no", l: "不合格單號", serial: true }, { k: "applyDate", l: "通報日期", t: "date", req: true }],
+          [{ k: "dept", l: "申請部門" }, { k: "applicant", l: "通報人", req: true }],
+          [{ k: "supplier", l: "供應商名稱" }, { k: "supplierCode", l: "供應商代碼" }],
+          [{ k: "poNo", l: "採購單號" }, { k: "inDate", l: "進料日期", t: "date" }],
+          [{ k: "product", l: "產品名稱" }, { k: "itemNo", l: "廠內料號" }],
+          [{ k: "lot", l: "進料批號" }, { k: "qty", l: "進料數量（pcs）" }],
+          [{ k: "sampleQty", l: "抽樣數（pcs）" }, { k: "defectQty", l: "不良數量（pcs）" }],
+          [{ k: "defectRate", l: "不良率（%）" }, { k: "basis", l: "檢驗依據（SIP／圖面編號）" }]
+        ]
+      },
+      {
+        h: "二、檢驗與判定",
+        type: "table",
+        k: "inspect",
+        rows: 4,
+        cols: [
+          { l: "檢驗項目", w: "26%" },
+          { l: "規格要求", w: "32%" },
+          { l: "檢驗結果" },
+          { l: "判定", opts: ["合格", "不合格"], w: "20%" }
+        ]
+      },
+      {
+        h: "",
+        type: "pairs",
+        rows: [
+          [{ k: "inspMethod", l: "檢驗方式（全檢／抽樣 AQL）" }, { k: "inspector", l: "檢驗員" }]
+        ]
+      },
+      {
+        h: "三、不良現象描述",
+        type: "defect",
+        k: "defect",
+        stages: ["收貨檢驗", "上線使用", "委外加工回廠", "客戶端反映"]
+      },
+      {
+        h: "",
+        type: "checks",
+        k: "defectType",
+        items: ["尺寸", "外觀", "材質", "功能／性能", "包裝／標示", "文件／證明文件"],
+        other: true
+      },
+      {
+        h: "四、原因分析",
+        type: "textarea",
+        k: "cause",
+        rows: 3,
+        hint: "敘述造成不良的可能原因（供應商製程、運輸、本公司規格或保管）",
+        extras: [
+          { k: "owner", l: "責任歸屬", opts: ["供應商", "運輸過程", "本公司", "待確認"] }
+        ]
+      },
+      {
+        h: "五、處理判定（8.7.1）",
+        type: "table",
+        k: "disposition",
+        rows: 5,
+        rowLabels: ["退貨／換貨", "特採（讓步接收）", "全檢挑選（選別）", "報廢", "轉其他用途／降級使用"],
+        cols: [
+          { l: "處理方式", static: true, w: "34%" },
+          { l: "採用", opts: ["否", "是"], w: "20%" },
+          { l: "數量／說明" }
+        ]
+      },
+      {
+        h: "六、授權與客戶同意（未經授權不得放行）",
+        type: "table",
+        k: "auth",
+        rows: 4,
+        rowLabels: ["授權人（品保主管）", "授權日期", "授權範圍（批號／數量）", "客戶同意（FRM-QA-003 單號）"],
+        cols: [
+          { l: "項目", static: true, w: "34%" },
+          { l: "內容" }
+        ]
+      },
+      {
+        h: "",
+        type: "pairs",
+        rows: [
+          [{ k: "needCustomer", l: "是否需客戶書面同意（是／否）" }, { k: "custAgreeDate", l: "客戶同意日期", t: "date" }]
+        ]
+      },
+      {
+        h: "七、供應商矯正措施與追溯（10.2）",
+        type: "checks",
+        k: "carType",
+        items: ["8D 報告", "CAR 矯正措施單", "供應商現場輔導", "不需矯正措施"],
+        other: true
+      },
+      {
+        h: "",
+        type: "table",
+        k: "car",
+        rows: 6,
+        rowLabels: ["矯正措施單號", "要求回覆期限", "供應商回覆日期", "對策內容摘要", "索賠／扣款金額", "有效性確認方式"],
+        cols: [
+          { l: "項目", static: true, w: "30%" },
+          { l: "內容（期限請填 YYYY-MM-DD）" }
+        ]
+      },
+      {
+        h: "",
+        type: "pairs",
+        rows: [
+          [{ k: "carResult", l: "有效性確認結果（有效／無效／未確認）" }, { k: "supplierGrade", l: "供應商評鑑調整（維持／降級／停用／觀察）" }]
+        ]
+      },
+      {
+        h: "八、結案",
+        type: "pairs",
+        rows: [
+          [{ k: "closeDate", l: "結案日期", t: "date" }, { k: "closer", l: "結案人員" }],
+          [{ k: "closeNote", l: "處置結果說明" }, { k: "stockNote", l: "庫存／在製品處理" }]
+        ]
+      },
+      {
+        h: "九、會簽",
+        type: "sig",
+        k: "countersign",
+        rows: ["品保部", "採購部", "生管／倉儲"],
+        opinion: true
+      },
+      {
+        h: "十、核准",
+        type: "sig",
+        k: "sign",
+        rows: ["通報人", "品保主管", "採購主管", "廠長／總經理"]
+      },
+      { h: "十一、版本歷程", type: "history" }
     ]
   }
 ];
