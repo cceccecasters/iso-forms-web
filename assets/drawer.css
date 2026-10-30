@@ -19,6 +19,8 @@
 .btn-danger { color: var(--danger); border-color: #e4c4c0; }
 .btn-danger:hover { background: #fbeceb; border-color: var(--danger); }
 
+.rec-tag-warn { background: #fdf0e3; color: var(--amber); border-color: #edd3b3; }
+
 .drawer { position: fixed; inset: 0; z-index: 60; }
 
 .drawer-mask {
