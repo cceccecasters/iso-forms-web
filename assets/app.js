@@ -137,8 +137,8 @@
       }).join("");
       if (s.other) {
         var p = base + "|其他";
-        html += '<label class="chip"><input type="checkbox" data-k="' + esc(p) + '"><span>其他</span></label>' +
-          '<input class="inline-text" type="text" data-k="' + esc(base + ".其他說明") + '" placeholder="請說明">';
+        html += '<label class="chip"><input type="checkbox" data-k="' + esc(p) + '" data-other="1"><span>其他</span></label>' +
+          '<input class="inline-text" type="text" data-k="' + esc(base + ".其他說明") + '" data-other-for="1" placeholder="請說明" hidden>';
       }
       return html + "</div>";
     },
@@ -354,6 +354,12 @@
       if (el.type === "radio") el.checked = v !== undefined && String(v) === el.value;
       else if (el.type === "checkbox") el.checked = !!v;
       else el.value = v === undefined ? "" : v;
+    });
+    // 其他勾選回填時同步顯示說明欄
+    card.querySelectorAll("[data-other]").forEach(function (el) {
+      var wrap = el.closest(".opt-wrap");
+      var inp = wrap && wrap.querySelector("[data-other-for]");
+      if (inp) inp.hidden = !el.checked;
     });
     card.querySelectorAll("[data-preview]").forEach(function (img) {
       var kk = img.getAttribute("data-preview");
@@ -737,7 +743,7 @@
     var main = document.querySelector("[data-main]");
 
     nav.innerHTML = FORMS.map(function (f) {
-      return '<button type="button" class="tab" data-tab="' + esc(f.id) + '"><span class="tab-code">' + esc(f.id) + '</span><span class="tab-name">' + esc(f.title) + '</span><span class="tab-ver">v' + esc(f.version) + "</span></button>";
+      return '<button type="button" class="tab" data-tab="' + esc(f.id) + '" title="' + esc(f.id + ' ' + f.title + ' v' + f.version) + '"><span class="tab-code">' + esc(f.id) + '</span><span class="tab-name">' + esc(f.title) + '</span><span class="tab-ver">v' + esc(f.version) + "</span></button>";
     }).join("");
 
     main.innerHTML = FORMS.map(renderForm).join("");
@@ -753,24 +759,47 @@
     main.addEventListener("input", function (e) {
       if (e.target.matches("[data-k]")) { scheduleSave(); renderProgress(state.current); }
     });
-    // 單選項目再點一次可取消（原本選了就必須換頁才會清掉）
+    // 單選項目再點一次可取消（點圓圈或點標籤文字都算）
     var radioWasOn = false;
+    var radioRef = null;
     main.addEventListener("mousedown", function (e) {
-      radioWasOn = e.target.matches && e.target.matches('input[type="radio"]') ? e.target.checked : false;
+      var r = null;
+      if (e.target.matches && e.target.matches('input[type="radio"]')) {
+        r = e.target;
+      } else if (e.target.closest) {
+        var lb = e.target.closest("label");
+        if (lb) r = lb.querySelector('input[type="radio"]');
+      }
+      radioRef = r;
+      radioWasOn = !!(r && r.checked);
     }, true);
     main.addEventListener("click", function (e) {
-      var r = e.target;
-      if (!r.matches || !r.matches('input[type="radio"]') || !radioWasOn) return;
+      if (!radioWasOn || !radioRef || !radioRef.isConnected) {
+        radioWasOn = false;
+        radioRef = null;
+        return;
+      }
+      var r = radioRef;
       var all = main.querySelectorAll('input[type="radio"]');
       for (var i = 0; i < all.length; i++) {
         if (all[i].name === r.name) all[i].checked = false;
       }
       radioWasOn = false;
+      radioRef = null;
+      e.preventDefault();  // 阻止 label 再觸發一次選取
       scheduleSave();
       renderProgress(state.current);
     }, true);
 
     main.addEventListener("change", function (e) {
+      if (e.target.matches("[data-other]")) {
+        var wrap = e.target.closest(".opt-wrap");
+        var inp = wrap && wrap.querySelector("[data-other-for]");
+        if (inp) {
+          inp.hidden = !e.target.checked;
+          if (!e.target.checked) inp.value = "";
+        }
+      }
       if (e.target.matches('input[type="checkbox"],input[type="radio"],select')) { scheduleSave(); renderProgress(state.current); }
       if (e.target.matches("[data-img]")) handleImage(e.target);
     });
