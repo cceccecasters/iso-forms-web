@@ -100,9 +100,11 @@
   }
 
   function radioGroup(f, path, options, cls) {
+    // 同一題的選項共用一個 name 才會互斥；id 仍逐選項唯一
+    var gname = key(f.id, path);
     return '<div class="opt-row ' + (cls || "") + '">' + (options || []).map(function (o) {
       var id = key(f.id, path + "|" + o);
-      return '<label class="opt"><input type="radio" name="' + esc(id) + '" data-k="' + esc(path) + '" value="' + esc(o) + '"><span>' + esc(o) + "</span></label>";
+      return '<label class="opt"><input type="radio" id="' + esc(id) + '" name="' + esc(gname) + '" data-k="' + esc(path) + '" value="' + esc(o) + '"><span>' + esc(o) + "</span></label>";
     }).join("") + "</div>";
   }
 
@@ -783,16 +785,23 @@
         radioRef = null;
         return;
       }
-      var r = radioRef;
+      var nm = radioRef.name;
       var all = main.querySelectorAll('input[type="radio"]');
       for (var i = 0; i < all.length; i++) {
-        if (all[i].name === r.name) all[i].checked = false;
+        if (all[i].name === nm) all[i].checked = false;
       }
+      e.preventDefault();
       radioWasOn = false;
       radioRef = null;
-      e.preventDefault();  // 阻止 label 再觸發一次選取
-      scheduleSave();
-      renderProgress(state.current);
+      // 瀏覽器預設 activation 在事件派送後才執行，會在下一輪把 radio 勾回來
+      setTimeout(function () {
+        var again = main.querySelectorAll('input[type="radio"]');
+        for (var j = 0; j < again.length; j++) {
+          if (again[j].name === nm) again[j].checked = false;
+        }
+        scheduleSave();
+        renderProgress(state.current);
+      }, 0);
     }, true);
 
     main.addEventListener("change", function (e) {
