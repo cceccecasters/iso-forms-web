@@ -803,7 +803,7 @@ input.is-invalid, textarea.is-invalid { border-color: var(--danger); background:
 
 /* ---------- 表單字級（僅螢幕；列印維持 pt 設定） ---------- */
 @media screen {
-  .doc .tbl { font-size: 15px; }
+  .doc .tbl { font-size: 14.5px; }
   .doc .tbl th,
   .doc .tbl td { padding: 7px 10px; }
   .doc .tbl thead th { font-size: 13px; }
@@ -815,7 +815,7 @@ input.is-invalid, textarea.is-invalid { border-color: var(--danger); background:
   .doc input[type="number"],
   .doc select,
   .doc textarea {
-    font-size: 15px;
+    font-size: 14.5px;
     padding: 6px 8px;
   }
 
