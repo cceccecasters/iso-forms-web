@@ -755,17 +755,64 @@
     { t: "組織與規劃", ids: ["FRM-QA-014", "FRM-QA-015", "FRM-QA-018", "FRM-QA-019", "FRM-QA-020"] }
   ];
 
+
+  /* ---------- 常用表單（本機使用次數） ---------- */
+  var USAGE_KEY = "iso:usage:v1";
+
+  function readUsage() {
+    try {
+      return JSON.parse(localStorage.getItem(USAGE_KEY) || "{}") || {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function noteUsage(id) {
+    if (!id) return;
+    try {
+      var u = readUsage();
+      var rec = u[id] || { n: 0, t: 0 };
+      rec.n = (rec.n || 0) + 1;
+      rec.t = Date.now();
+      u[id] = rec;
+      localStorage.setItem(USAGE_KEY, JSON.stringify(u));
+    } catch (e) { /* 私密模式可能封鎖 localStorage，忽略 */ }
+  }
+
+  function topUsed(limit) {
+    var u = readUsage();
+    return FORMS
+      .filter(function (f) { return u[f.id] && u[f.id].n > 0; })
+      .sort(function (x, y) {
+        var a = u[x.id], b = u[y.id];
+        return b.n - a.n || b.t - a.t;
+      })
+      .slice(0, limit || 3)
+      .map(function (f) { return f.id; });
+  }
+
   function renderSideNav() {
     var box = document.querySelector("[data-sidenav]");
     if (!box) return;
     var used = {};
     var html = '<div class="side-head">表單分類　' + FORMS.length + ' 張</div>';
+    var pinned = topUsed(3);
+    if (pinned.length) {
+      html += '<div class="side-group side-group-pin"><p class="side-group-t">常用</p>' +
+        pinned.map(function (id) {
+          var f = FORMS.filter(function (x) { return x.id === id; })[0];
+          if (!f) return "";
+          return '<button type="button" class="side-item' + (state.current === f.id ? " is-active" : "") + '" data-tab="' + esc(f.id) + '" title="' + esc(f.id + " " + f.title + " v" + f.version) + '">' +
+            '<span class="side-code">' + esc(f.id) + "</span>" +
+            '<span class="side-name">' + esc(f.title) + "</span></button>";
+        }).join("") + "</div>";
+    }
     FORM_GROUPS.forEach(function (g) {
       var items = g.ids.map(function (id) {
         var f = FORMS.filter(function (x) { return x.id === id; })[0];
         if (!f) return "";
         used[id] = true;
-        return '<button type="button" class="side-item" data-tab="' + esc(f.id) + '" title="' + esc(f.id + " " + f.title + " v" + f.version) + '">' +
+        return '<button type="button" class="side-item' + (state.current === f.id ? " is-active" : "") + '" data-tab="' + esc(f.id) + '" title="' + esc(f.id + " " + f.title + " v" + f.version) + '">' +
           '<span class="side-code">' + esc(f.id) + '</span>' +
           '<span class="side-name">' + esc(f.title) + '</span></button>';
       }).join("");
@@ -780,12 +827,18 @@
       }).join("") + "</div>";
     }
     box.innerHTML = html;
-    box.addEventListener("click", function (e) {
-      var b = e.target.closest("[data-tab]");
-      if (!b) return;
-      saveNow();
-      show(b.getAttribute("data-tab"));
-    });
+    if (!box.__bound) {
+      box.__bound = true;
+      box.addEventListener("click", function (e) {
+        var b = e.target.closest("[data-tab]");
+        if (!b) return;
+        var id = b.getAttribute("data-tab");
+        saveNow();
+        noteUsage(id);
+        show(id);
+        renderSideNav();
+      });
+    }
   }
 
   /* ---------- boot ---------- */
@@ -805,7 +858,12 @@
 
     nav.addEventListener("click", function (e) {
       var t = e.target.closest("[data-tab]");
-      if (t) { saveNow(); show(t.getAttribute("data-tab")); }
+      if (!t) return;
+      var tid = t.getAttribute("data-tab");
+      saveNow();
+      noteUsage(tid);
+      show(tid);
+      renderSideNav();
     });
 
     main.addEventListener("input", function (e) {
