@@ -743,10 +743,56 @@
     window.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
   }
 
+
+  // 桌機右側分類（依文件使用情境，非 ISO 章節）
+  var FORM_GROUPS = [
+    { t: "開發與變更", ids: ["FRM-EN-001", "FRM-QA-001", "FRM-QA-002"] },
+    { t: "進料與供應商", ids: ["FRM-QA-004", "FRM-QA-010"] },
+    { t: "製程與出貨", ids: ["FRM-QA-003", "FRM-QA-013"] },
+    { t: "量測與不合格", ids: ["FRM-QA-005", "FRM-QA-006", "FRM-QA-007"] },
+    { t: "訂單與顧客", ids: ["FRM-QA-012", "FRM-QA-016"] },
+    { t: "系統管理", ids: ["FRM-QA-008", "FRM-QA-009", "FRM-QA-011", "FRM-QA-017"] },
+    { t: "組織與規劃", ids: ["FRM-QA-014", "FRM-QA-015", "FRM-QA-018", "FRM-QA-019", "FRM-QA-020"] }
+  ];
+
+  function renderSideNav() {
+    var box = document.querySelector("[data-sidenav]");
+    if (!box) return;
+    var used = {};
+    var html = '<div class="side-head">表單分類　' + FORMS.length + ' 張</div>';
+    FORM_GROUPS.forEach(function (g) {
+      var items = g.ids.map(function (id) {
+        var f = FORMS.filter(function (x) { return x.id === id; })[0];
+        if (!f) return "";
+        used[id] = true;
+        return '<button type="button" class="side-item" data-tab="' + esc(f.id) + '" title="' + esc(f.id + " " + f.title + " v" + f.version) + '">' +
+          '<span class="side-code">' + esc(f.id) + '</span>' +
+          '<span class="side-name">' + esc(f.title) + '</span></button>';
+      }).join("");
+      if (!items) return;
+      html += '<div class="side-group"><p class="side-group-t">' + esc(g.t) + '</p>' + items + "</div>";
+    });
+    var rest = FORMS.filter(function (f) { return !used[f.id]; });
+    if (rest.length) {
+      html += '<div class="side-group"><p class="side-group-t">未分類</p>' + rest.map(function (f) {
+        return '<button type="button" class="side-item" data-tab="' + esc(f.id) + '">' +
+          '<span class="side-code">' + esc(f.id) + '</span><span class="side-name">' + esc(f.title) + "</span></button>";
+      }).join("") + "</div>";
+    }
+    box.innerHTML = html;
+    box.addEventListener("click", function (e) {
+      var b = e.target.closest("[data-tab]");
+      if (!b) return;
+      saveNow();
+      show(b.getAttribute("data-tab"));
+    });
+  }
+
   /* ---------- boot ---------- */
   function boot() {
     var nav = document.querySelector("[data-nav]");
     var main = document.querySelector("[data-main]");
+    renderSideNav();
 
     nav.innerHTML = FORMS.map(function (f) {
       return '<button type="button" class="tab" data-tab="' + esc(f.id) + '" title="' + esc(f.id + ' ' + f.title + ' v' + f.version) + '"><span class="tab-code">' + esc(f.id) + '</span><span class="tab-name">' + esc(f.title) + '</span><span class="tab-ver">v' + esc(f.version) + "</span></button>";
