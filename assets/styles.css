@@ -770,3 +770,74 @@ input.is-invalid, textarea.is-invalid { border-color: var(--danger); background:
 
   .side-item.is-active .side-name { font-weight: 500; }
 }
+
+/* ---------- 表單字級（僅螢幕；列印維持 pt 設定） ---------- */
+@media screen {
+  .doc .tbl { font-size: 15px; }
+  .doc .tbl th,
+  .doc .tbl td { padding: 7px 10px; }
+  .doc .tbl thead th { font-size: 13px; }
+  .doc .tbl .row-h { font-size: 13.5px; }
+  .doc .tbl .muted { font-size: 13px; }
+
+  .doc input[type="text"],
+  .doc input[type="date"],
+  .doc input[type="number"],
+  .doc select,
+  .doc textarea {
+    font-size: 15px;
+    padding: 6px 8px;
+  }
+
+  .doc .chip { font-size: 13.5px; padding: 5px 13px 5px 10px; }
+  .doc .opt { font-size: 13.5px; }
+  .doc .btn-mini { font-size: 12.5px; }
+
+  .doc .extra-l,
+  .doc .extra em,
+  .doc .oi em,
+  .doc .inline-field em { font-size: 12.5px; }
+
+  .doc .tbl-meta th { font-size: 11.5px; }
+  .doc .tbl-meta td { font-size: 14.5px; }
+
+  .doc .doc-clause,
+  .doc .doc-usage { font-size: 13.5px; }
+
+  .doc .sec h3 { font-size: 17.5px; }
+  .doc .doc-title h2 { font-size: 28px; }
+
+  /* 側欄分類名稱 */
+  .side-group-t { font-weight: 700; }
+}
+
+/* ---------- 列印：還原為 pt 字級（覆蓋螢幕放大規則） ---------- */
+@media print {
+  .doc .tbl,
+  .doc .tbl th,
+  .doc .tbl td { font-size: 9pt !important; }
+  .doc .tbl thead th { font-size: 9.5pt !important; }
+  .doc .tbl .row-h { font-size: 9.5pt !important; }
+  .doc .tbl .muted { font-size: 8.5pt !important; }
+  .doc input[type="text"],
+  .doc input[type="date"],
+  .doc input[type="number"],
+  .doc select,
+  .doc textarea { font-size: 9.5pt !important; }
+  .doc .chip,
+  .doc .opt,
+  .doc .extra-l,
+  .doc .extra em,
+  .doc .oi em { font-size: 9pt !important; }
+  .doc .sec h3 { font-size: 11pt !important; }
+  .doc .doc-title h2 { font-size: 16pt !important; }
+  .doc .tbl-meta td { font-size: 10pt !important; }
+}
+
+/* ---------- 手機：多欄表在容器內橫向捲動，避免字被壓縮 ---------- */
+@media screen and (max-width: 640px) {
+  .doc .sec { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .doc .tbl { table-layout: auto; min-width: 100%; }
+  /* 多欄表給最小寬度，讓 .sec 產生可捲範圍（表格溢出不計入祖先 scrollWidth） */
+  .doc .sec .tbl { min-width: 420px; }
+}
