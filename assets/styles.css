@@ -720,6 +720,9 @@ input.is-invalid, textarea.is-invalid { border-color: var(--danger); background:
     margin: 0 0 10px 6px;
   }
 
+
+  .side-group-pin { margin-bottom: 4px; }
+  .side-group-pin .side-group-t { color: var(--accent); border-bottom-color: var(--accent); }
   .side-group { margin-top: 12px; }
   .side-group:first-of-type { margin-top: 0; }
 
