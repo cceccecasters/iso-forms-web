@@ -740,6 +740,7 @@
     }
     renderProgress(id);
     refreshCount();
+    renderSideNav();  // 切換表單時同步側欄分類展開狀態
     window.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
   }
 
@@ -756,85 +757,77 @@
   ];
 
 
-  /* ---------- 常用表單（本機使用次數） ---------- */
-  var USAGE_KEY = "iso:usage:v1";
+  /* ---------- 右側分類（可收合下拉） ---------- */
+  var openGroup = 0;
+  var lastSyncedForm = null;
 
-  function readUsage() {
-    try {
-      return JSON.parse(localStorage.getItem(USAGE_KEY) || "{}") || {};
-    } catch (e) {
-      return {};
+  function groupOf(id) {
+    for (var i = 0; i < FORM_GROUPS.length; i++) {
+      if (FORM_GROUPS[i].ids.indexOf(id) >= 0) return i;
     }
+    return -1;
   }
 
-  function noteUsage(id) {
-    if (!id) return;
-    try {
-      var u = readUsage();
-      var rec = u[id] || { n: 0, t: 0 };
-      rec.n = (rec.n || 0) + 1;
-      rec.t = Date.now();
-      u[id] = rec;
-      localStorage.setItem(USAGE_KEY, JSON.stringify(u));
-    } catch (e) { /* 私密模式可能封鎖 localStorage，忽略 */ }
-  }
-
-  function topUsed(limit) {
-    var u = readUsage();
-    return FORMS
-      .filter(function (f) { return u[f.id] && u[f.id].n > 0; })
-      .sort(function (x, y) {
-        var a = u[x.id], b = u[y.id];
-        return b.n - a.n || b.t - a.t;
-      })
-      .slice(0, limit || 3)
-      .map(function (f) { return f.id; });
+  function sideItem(f) {
+    return '<button type="button" class="side-item' + (state.current === f.id ? " is-active" : "") +
+      '" data-tab="' + esc(f.id) + '" title="' + esc(f.id + " " + f.title + " v" + f.version) + '">' +
+      '<span class="side-code">' + esc(f.id) + "</span>" +
+      '<span class="side-name">' + esc(f.title) + "</span></button>";
   }
 
   function renderSideNav() {
     var box = document.querySelector("[data-sidenav]");
     if (!box) return;
     var used = {};
-    var html = '<div class="side-head">表單分類　' + FORMS.length + ' 張</div>';
-    var pinned = topUsed(3);
-    if (pinned.length) {
-      html += '<div class="side-group side-group-pin"><p class="side-group-t">常用</p>' +
-        pinned.map(function (id) {
-          var f = FORMS.filter(function (x) { return x.id === id; })[0];
-          if (!f) return "";
-          return '<button type="button" class="side-item' + (state.current === f.id ? " is-active" : "") + '" data-tab="' + esc(f.id) + '" title="' + esc(f.id + " " + f.title + " v" + f.version) + '">' +
-            '<span class="side-code">' + esc(f.id) + "</span>" +
-            '<span class="side-name">' + esc(f.title) + "</span></button>";
-        }).join("") + "</div>";
+    // 只在切換表單時同步所屬分類；使用者手動收合/展開則保留其選擇
+    if (state.current !== lastSyncedForm) {
+      lastSyncedForm = state.current;
+      var cur = groupOf(state.current);
+      if (cur >= 0) openGroup = cur;
     }
-    FORM_GROUPS.forEach(function (g) {
+
+    var html = '<div class="side-head">表單分類　' + FORMS.length + " 張</div>";
+
+    FORM_GROUPS.forEach(function (g, gi) {
       var items = g.ids.map(function (id) {
         var f = FORMS.filter(function (x) { return x.id === id; })[0];
         if (!f) return "";
         used[id] = true;
-        return '<button type="button" class="side-item' + (state.current === f.id ? " is-active" : "") + '" data-tab="' + esc(f.id) + '" title="' + esc(f.id + " " + f.title + " v" + f.version) + '">' +
-          '<span class="side-code">' + esc(f.id) + '</span>' +
-          '<span class="side-name">' + esc(f.title) + '</span></button>';
+        return sideItem(f);
       }).join("");
       if (!items) return;
-      html += '<div class="side-group"><p class="side-group-t">' + esc(g.t) + '</p>' + items + "</div>";
+      var open = gi === openGroup;
+      html += '<div class="side-group' + (open ? " is-open" : "") + '">' +
+        '<button type="button" class="side-group-t" data-gt="' + gi + '" aria-expanded="' + open + '">' +
+        "<span>" + esc(g.t) + '</span><span class="side-cnt">' + g.ids.length + "</span></button>" +
+        '<div class="side-list">' + items + "</div></div>";
     });
+
     var rest = FORMS.filter(function (f) { return !used[f.id]; });
     if (rest.length) {
-      html += '<div class="side-group"><p class="side-group-t">未分類</p>' + rest.map(function (f) {
-        return '<button type="button" class="side-item" data-tab="' + esc(f.id) + '">' +
-          '<span class="side-code">' + esc(f.id) + '</span><span class="side-name">' + esc(f.title) + "</span></button>";
-      }).join("") + "</div>";
+      html += '<div class="side-group' + (openGroup === -1 ? " is-open" : "") + '">' +
+        '<button type="button" class="side-group-t" data-gt="-1" aria-expanded="false">' +
+        "<span>未分類</span><span class=\"side-cnt\">" + rest.length + "</span></button>" +
+        '<div class="side-list">' + rest.map(sideItem).join("") + "</div></div>";
     }
+
     box.innerHTML = html;
+
     if (!box.__bound) {
       box.__bound = true;
       box.addEventListener("click", function (e) {
+        var gt = e.target.closest("[data-gt]");
+        if (gt) {
+          var gi = parseInt(gt.getAttribute("data-gt"), 10);
+          if (isNaN(gi)) gi = -1;
+          openGroup = openGroup === gi ? -1 : gi;
+          renderSideNav();
+          return;
+        }
         var b = e.target.closest("[data-tab]");
         if (!b) return;
         var id = b.getAttribute("data-tab");
         saveNow();
-        noteUsage(id);
         show(id);
         renderSideNav();
       });
@@ -861,7 +854,6 @@
       if (!t) return;
       var tid = t.getAttribute("data-tab");
       saveNow();
-      noteUsage(tid);
       show(tid);
       renderSideNav();
     });
