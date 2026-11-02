@@ -638,7 +638,7 @@ input.is-invalid, textarea.is-invalid { border-color: var(--danger); background:
   body::before { display: none; }
   .app-header, .toolbar, .progress-wrap, .app-foot, .btn, .btn-mini { display: none !important; }
   /* 歷史紀錄抽屜開著時不可被印出 */
-  .drawer, .drawer-panel, .drawer-mask, .drawer-head, .drawer-tools { display: none !important; }
+  .drawer, .drawer-panel, .drawer-mask, .drawer-head, .drawer-tools, .side-nav { display: none !important; }
   main { max-width: none; padding: 0; }
   .doc { border: none; box-shadow: none; padding: 0; animation: none; }
   .doc[hidden] { display: none !important; }
@@ -670,4 +670,100 @@ input.is-invalid, textarea.is-invalid { border-color: var(--danger); background:
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+
+/* ---------- 桌機右側分類側欄 ---------- */
+.side-nav { display: none; }
+
+@media (min-width: 1080px) {
+  .header-inner,
+  .toolbar-inner,
+  .progress-wrap,
+  .app-foot,
+  .layout { max-width: 1440px; }
+
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 252px;
+    gap: 24px;
+    align-items: start;
+    margin: 0 auto;
+    padding: 20px 24px 64px;
+  }
+
+  .layout > main {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* 桌機改用右側分類，不再顯示橫向頁籤 */
+  .tabs { display: none !important; }
+  .toolbar-inner { justify-content: flex-end; }
+
+  .side-nav {
+    display: block;
+    position: sticky;
+    top: 14px;
+    max-height: calc(100vh - 28px);
+    overflow-y: auto;
+    background: var(--card);
+    border: 1px solid var(--line);
+    padding: 14px 10px 16px;
+  }
+
+  .side-head {
+    font-size: 11.5px;
+    letter-spacing: 0.08em;
+    color: var(--ink-3);
+    margin: 0 0 10px 6px;
+  }
+
+  .side-group { margin-top: 12px; }
+  .side-group:first-of-type { margin-top: 0; }
+
+  .side-group-t {
+    font-size: 11.5px;
+    color: var(--ink-3);
+    margin: 0 0 5px 6px;
+    padding-bottom: 3px;
+    border-bottom: 1px dotted var(--line);
+  }
+
+  .side-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: 0;
+    border-left: 2px solid transparent;
+    padding: 5px 6px 5px 8px;
+    margin: 1px 0;
+    cursor: pointer;
+    font: inherit;
+    color: var(--ink);
+  }
+
+  .side-item:hover { background: #f1ede4; }
+
+  .side-item.is-active {
+    background: #edf3ee;
+    border-left-color: var(--accent);
+  }
+
+  .side-code {
+    display: block;
+    font-size: 11px;
+    color: var(--ink-3);
+    letter-spacing: 0.02em;
+  }
+
+  .side-name {
+    display: block;
+    font-size: 12.5px;
+    line-height: 1.4;
+  }
+
+  .side-item.is-active .side-name { font-weight: 500; }
 }
