@@ -93,22 +93,26 @@ window.ISO_HISTORY = {
   "SOP-PD-001": [
     ["1.0", "2026-11-02", "初版發行：作業標準書範本（8.5.1／7.5.2／8.5.6）", ""],
     ["1.1", "2026-11-03", "v1.1 精簡版：章節 10→4，保留基本資料、作業步驟、簽核；移除設備、CTQ、異常處理等區塊", ""],
-    ["1.2", "2026-11-03", "文件編號改為 SOP-PD-001，取號自 SOP-PD-01 起（原 DOC-PD-001）", ""]
+    ["1.2", "2026-11-03", "文件編號改為 SOP-PD-001，取號自 SOP-PD-01 起（原 DOC-PD-001）", ""],
+    ["1.3", "2026-11-03", "v1.3 作業步驟新增照片欄", "文件管制人員"]
   ],
   "SIP-QA-001": [
     ["1.0", "2026-11-02", "初版發行：檢驗標準書範本（8.6／8.4.2／9.1.1／7.1.5.1）", ""],
     ["1.1", "2026-11-03", "v1.1 精簡版：章節 10→4，保留基本資料、檢驗項目、簽核；移除抽樣、儀器、處置等區塊", ""],
-    ["1.2", "2026-11-03", "文件編號改為 SIP-QA-001，取號自 SIP-QA-01 起（原 DOC-QA-004）", ""]
+    ["1.2", "2026-11-03", "文件編號改為 SIP-QA-001，取號自 SIP-QA-01 起（原 DOC-QA-004）", ""],
+    ["1.3", "2026-11-03", "v1.3 檢驗項目新增照片欄", "文件管制人員"]
   ],
   "FMEA-EN-001": [
     ["1.0", "2026-11-02", "初版發行：FMEA 範本（6.1／8.3.3／8.5.1），S／O／D 與 RPN 評估", ""],
     ["1.1", "2026-11-03", "v1.1 精簡版：章節 11→4，S／O／D 與 RPN 改為風險等級（高／中／低）", ""],
-    ["1.2", "2026-11-03", "文件編號改為 FMEA-EN-001，取號自 FMEA-EN-01 起（原 DOC-EN-001）", ""]
+    ["1.2", "2026-11-03", "文件編號改為 FMEA-EN-001，取號自 FMEA-EN-01 起（原 DOC-EN-001）", ""],
+    ["1.3", "2026-11-03", "v1.3 失效分析新增照片欄", "文件管制人員"]
   ],
   "CLP-QA-001": [
     ["1.0", "2026-11-02", "初版發行：控制計畫範本（8.5.1／8.6／8.4.2／9.1.1）", ""],
     ["1.1", "2026-11-03", "v1.1 精簡版：章節 9→4，控制計畫表 7 欄→4 欄；移除反應計畫、量測校正等區塊", ""],
-    ["1.2", "2026-11-03", "文件編號改為 CLP-QA-001，取號自 CLP-QA-01 起（原 DOC-QA-005）", ""]
+    ["1.2", "2026-11-03", "文件編號改為 CLP-QA-001，取號自 CLP-QA-01 起（原 DOC-QA-005）", ""],
+    ["1.3", "2026-11-03", "v1.3 管制項目新增照片欄", "文件管制人員"]
   ]
 };
 
@@ -1018,7 +1022,7 @@ sections: [
     id: "SOP-PD-001",
     title: "作業標準書（SOP）",
     prefix: "SOP-PD",
-    version: "1.2",
+    version: "1.3",
     effective: "2026-11-03",
     serialFmt: "seq",
     serialStart: 1,
@@ -1034,7 +1038,7 @@ sections: [
     ],
     sections: [
       {h: "一、基本資料", type: "pairs", rows: [[{k: "no", l: "文件編號", req: true, serial: "SOP-PD"}, {k: "ver", l: "版次", req: true, ver: true}], [{k: "idate", l: "生效日期", t: "date"}, {k: "dept", l: "制定單位"}], [{k: "prod", l: "適用產品／製程"}, {k: "station", l: "工作站／機台"}]]},
-      {h: "二、作業步驟", type: "table", k: "t1", rows: 5, cols: [{l: "步驟", w: "10%", num: true}, {l: "作業內容"}, {l: "管制重點", w: "32%"}]},
+      {h: "二、作業步驟", type: "table", k: "t1", rows: 5, cols: [{l: "步驟", w: "8%", num: true}, {l: "作業內容"}, {l: "管制重點", w: "26%"}, {l: "照片", w: "18%", photo: true}]},
       {h: "三、簽核", type: "sig", k: "g1", rows: ["制定", "審核", "核准"]},
       {h: "四、版本歷程", type: "history"}
     ]
@@ -1043,7 +1047,7 @@ sections: [
     id: "SIP-QA-001",
     title: "檢驗標準書（SIP）",
     prefix: "SIP-QA",
-    version: "1.2",
+    version: "1.3",
     effective: "2026-11-03",
     serialFmt: "seq",
     serialStart: 1,
@@ -1059,7 +1063,7 @@ sections: [
     ],
     sections: [
       {h: "一、基本資料", type: "pairs", rows: [[{k: "no", l: "文件編號", req: true, serial: "SIP-QA"}, {k: "ver", l: "版次", req: true, ver: true}], [{k: "idate", l: "生效日期", t: "date"}, {k: "dept", l: "制定單位"}], [{k: "prod", l: "產品名稱"}, {k: "part", l: "料號"}]]},
-      {h: "二、檢驗項目", type: "table", k: "t1", rows: 6, cols: [{l: "項次", w: "8%", num: true}, {l: "檢驗項目", w: "26%"}, {l: "規格標準", w: "42%"}, {l: "判定", w: "20%", opts: ["OK", "NG"]}]},
+      {h: "二、檢驗項目", type: "table", k: "t1", rows: 6, cols: [{l: "項次", w: "8%", num: true}, {l: "檢驗項目", w: "24%"}, {l: "規格標準", w: "32%"}, {l: "判定", w: "16%", opts: ["OK", "NG"]}, {l: "照片", w: "20%", photo: true}]},
       {h: "三、簽核", type: "sig", k: "g1", rows: ["制定", "審核", "核准"]},
       {h: "四、版本歷程", type: "history"}
     ]
@@ -1068,7 +1072,7 @@ sections: [
     id: "FMEA-EN-001",
     title: "失效模式與效應分析（FMEA）",
     prefix: "FMEA-EN",
-    version: "1.2",
+    version: "1.3",
     effective: "2026-11-03",
     serialFmt: "seq",
     serialStart: 1,
@@ -1084,7 +1088,7 @@ sections: [
     ],
     sections: [
       {h: "一、基本資料", type: "pairs", rows: [[{k: "no", l: "文件編號", req: true, serial: "FMEA-EN"}, {k: "ver", l: "版次", req: true, ver: true}], [{k: "idate", l: "分析日期", t: "date"}, {k: "owner", l: "負責人"}], [{k: "prod", l: "產品名稱"}, {k: "part", l: "料號"}]]},
-      {h: "二、失效分析", type: "table", k: "t1", rows: 5, cols: [{l: "項次", w: "6%", num: true}, {l: "失效模式", w: "28%"}, {l: "原因", w: "28%"}, {l: "風險", w: "14%", opts: ["高", "中", "低"]}, {l: "改善措施", w: "24%"}]},
+      {h: "二、失效分析", type: "table", k: "t1", rows: 5, cols: [{l: "項次", w: "6%", num: true}, {l: "失效模式", w: "24%"}, {l: "原因", w: "22%"}, {l: "風險", w: "12%", opts: ["高", "中", "低"]}, {l: "改善措施", w: "20%"}, {l: "照片", w: "16%", photo: true}]},
       {h: "三、簽核", type: "sig", k: "g1", rows: ["工程", "品保", "廠長"]},
       {h: "四、版本歷程", type: "history"}
     ]
@@ -1093,7 +1097,7 @@ sections: [
     id: "CLP-QA-001",
     title: "控制計畫（Control Plan）",
     prefix: "CLP-QA",
-    version: "1.2",
+    version: "1.3",
     effective: "2026-11-03",
     serialFmt: "seq",
     serialStart: 1,
@@ -1109,7 +1113,7 @@ sections: [
     ],
     sections: [
       {h: "一、基本資料", type: "pairs", rows: [[{k: "no", l: "文件編號", req: true, serial: "CLP-QA"}, {k: "ver", l: "版次", req: true, ver: true}], [{k: "idate", l: "生效日期", t: "date"}, {k: "owner", l: "負責人"}], [{k: "prod", l: "產品名稱"}, {k: "line", l: "生產線／製程"}]]},
-      {h: "二、管制項目", type: "table", k: "t1", rows: 6, cols: [{l: "項次", w: "7%", num: true}, {l: "製程步驟", w: "24%"}, {l: "管制特性", w: "23%"}, {l: "規格／公差", w: "23%"}, {l: "管制方法", w: "23%"}]},
+      {h: "二、管制項目", type: "table", k: "t1", rows: 6, cols: [{l: "項次", w: "6%", num: true}, {l: "製程步驟", w: "20%"}, {l: "管制特性", w: "20%"}, {l: "規格／公差", w: "18%"}, {l: "管制方法", w: "18%"}, {l: "照片", w: "18%", photo: true}]},
       {h: "三、簽核", type: "sig", k: "g1", rows: ["制定", "審核", "核准"]},
       {h: "四、版本歷程", type: "history"}
     ]
