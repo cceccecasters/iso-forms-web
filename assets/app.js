@@ -1303,8 +1303,12 @@
             }
             setStatus("已刪除紀錄 " + (rec.no || ""), "ok");
             state.stickyUntil = Date.now() + 4000;
-            loadRecords();
-            refreshCount();
+            // 先從清單與計數移除（雲端讀取有延遲，避免看起來沒刪掉）
+            drawerRecords = drawerRecords.filter(function (r) { return r.rid !== rec.rid; });
+            renderRecords();
+            var badge = document.querySelector("[data-count]");
+            if (badge) badge.textContent = drawerRecords.length;
+            setTimeout(loadRecords, 1500);
           });
         }
       }
