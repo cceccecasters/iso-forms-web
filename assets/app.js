@@ -70,17 +70,27 @@
 
   // 同一前綴可能由多張表單共用（例如 DOC-QA 的 SIP 與控制計畫），取號要跨表單合併計算
   function formsWithPrefix(prefix) {
+    // 只有 pairs 的 rows 是二維陣列；table 的 rows 是列數，需先判斷型別
     return FORMS.filter(function (x) {
       if (x.prefix === prefix) return true;
       return (x.sections || []).some(function (s) {
-        return (s.rows || []).some(function (row) {
-          return (row || []).some(function (c) { return c && c.serial === prefix; });
+        if (!Array.isArray(s.rows)) return false;
+        return s.rows.some(function (row) {
+          return Array.isArray(row) && row.some(function (c) { return c && c.serial === prefix; });
         });
       });
     });
   }
 
   function nextSerial(prefix, fmt, formId) {
+    try {
+      return nextSerialInner(prefix, fmt, formId);
+    } catch (e) {
+      return Promise.resolve("");
+    }
+  }
+
+  function nextSerialInner(prefix, fmt, formId) {
     var year = new Date().getFullYear();
     var fs = formsWithPrefix(prefix);
     if (!fs.length && formId) fs = FORMS.filter(function (x) { return x.id === formId; });
@@ -993,6 +1003,9 @@
             saveNow();
             renderProgress(state.current);
             setStatus("已取號 " + no + "（存檔後才會換下一號）", "ok");
+            // 取號後自動領版，文件類表單不必再手動點一次
+            var vbtn = document.querySelector('[data-form="' + state.current + '"] [data-version]');
+            if (vbtn) setTimeout(function () { vbtn.click(); }, 50);
           });
         }
         return;
