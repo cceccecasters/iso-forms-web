@@ -465,6 +465,15 @@
       return true;
     } catch (e) { return false; }
   }
+  // 表單內所有日期欄未填時預設當日
+  function fillTodayDates(card) {
+    if (!card) return;
+    var t = today();
+    card.querySelectorAll('input[type="date"]').forEach(function (el) {
+      if (!el.value) el.value = t;
+    });
+  }
+
   function clearDraft() {
     var f = formById(state.current);
     var card = document.querySelector('[data-form="' + f.id + '"]');
@@ -694,8 +703,7 @@
         img.removeAttribute("src");
       });
       card.querySelectorAll("[data-clear-img]").forEach(function (b) { b.hidden = true; });
-      var d = card.querySelector('[data-k="s0.applyDate"], [data-k="s0.idate"]');
-      if (d) d.value = today();
+      fillTodayDates(card);
     }
     applyRecMode();
     renderProgress(formId);
@@ -800,6 +808,14 @@
     show(rec.form);
     state.files = rec.files || {};
     restore(rec.form, rec.values || {});
+    // 舊紀錄未填的日期欄要保持空白，不能顯示今天的日期
+    var vcard = document.querySelector('[data-form="' + rec.form + '"]');
+    if (vcard) {
+      var saved = rec.values || {};
+      vcard.querySelectorAll('input[type="date"]').forEach(function (el) {
+        if (!(el.getAttribute("data-k") in saved)) el.value = "";
+      });
+    }
     state.viewRid = rec.rid;
     state.recLocked = !!(rec.values && rec.values.__locked);
     state.editingRid = (edit && !state.recLocked) ? rec.rid : null;
@@ -935,12 +951,8 @@
     if (!loadDraft(id)) setStatus("尚未填寫", "");
     else setStatus("已載入本機草稿", "ok");
 
-    // 申請日期未填時預設當日，避免每次都要手動選
-    var dEl = document.querySelector('[data-form="' + id + '"] [data-k="s0.applyDate"]');
-    if (dEl && !dEl.value) {
-      dEl.value = today();
-      saveNow();
-    }
+    // 所有日期欄未填時預設當日，避免每次都要手動選
+    fillTodayDates(document.querySelector('[data-form="' + id + '"]'));
     renderProgress(id);
     refreshCount();
     renderSideNav();
