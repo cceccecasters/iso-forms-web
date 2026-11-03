@@ -216,10 +216,11 @@
       });
     },
 
-    remove: function (rid) {
-      return postRemote({ action: "delete", rid: rid }).then(function (res) {
+    remove: function (rid, form) {
+      // 後端要靠 form 找工作表，少了它會回 deleted:false（看似成功其實沒刪）
+      return postRemote({ action: "delete", rid: rid, form: form || "" }).then(function (res) {
         // 沒設後端＝純本機；有設但刪除失敗就別動本機，避免各裝置資料不一致
-        if (remote() && !(res && res.ok)) return false;
+        if (remote() && !(res && res.ok && res.deleted !== false)) return false;
         return dropLocal(rid).then(function () { return true; });
       });
     },
