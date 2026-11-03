@@ -1075,11 +1075,11 @@ sections: [
     purpose: "失效模式與效應分析之範本、填寫與簽核",
     usage: "以失效模式、原因與風險等級聚焦高風險項目，並記錄改善措施。",
     listFields: [
-      {k: "s0.no", l: "FMEA 編號"},
+      {k: "s0.no", l: "文件編號"},
       {k: "s0.prod", l: "產品名稱"}
     ],
     sections: [
-      {h: "一、基本資料", type: "pairs", rows: [[{k: "no", l: "FMEA 編號", req: true, serial: "DOC-EN"}, {k: "ver", l: "版次", req: true, ver: true}], [{k: "idate", l: "分析日期", t: "date"}, {k: "owner", l: "負責人"}], [{k: "prod", l: "產品名稱"}, {k: "part", l: "料號"}]]},
+      {h: "一、基本資料", type: "pairs", rows: [[{k: "no", l: "文件編號", req: true, serial: "DOC-EN"}, {k: "ver", l: "版次", req: true, ver: true}], [{k: "idate", l: "分析日期", t: "date"}, {k: "owner", l: "負責人"}], [{k: "prod", l: "產品名稱"}, {k: "part", l: "料號"}]]},
       {h: "二、失效分析", type: "table", k: "t1", rows: 5, cols: [{l: "項次", w: "6%", num: true}, {l: "失效模式", w: "28%"}, {l: "原因", w: "28%"}, {l: "風險", w: "14%", opts: ["高", "中", "低"]}, {l: "改善措施", w: "24%"}]},
       {h: "三、簽核", type: "sig", k: "g1", rows: ["工程", "品保", "廠長"]},
       {h: "四、版本歷程", type: "history"}
@@ -1100,11 +1100,11 @@ sections: [
     purpose: "控制計畫之範本、填寫與簽核",
     usage: "量產製程之管制規劃；逐站列出管制特性、規格與管制方法。",
     listFields: [
-      {k: "s0.no", l: "控制計畫編號"},
+      {k: "s0.no", l: "文件編號"},
       {k: "s0.prod", l: "產品名稱"}
     ],
     sections: [
-      {h: "一、基本資料", type: "pairs", rows: [[{k: "no", l: "控制計畫編號", req: true, serial: "DOC-QA"}, {k: "ver", l: "版次", req: true, ver: true}], [{k: "idate", l: "生效日期", t: "date"}, {k: "owner", l: "負責人"}], [{k: "prod", l: "產品名稱"}, {k: "line", l: "生產線／製程"}]]},
+      {h: "一、基本資料", type: "pairs", rows: [[{k: "no", l: "文件編號", req: true, serial: "DOC-QA"}, {k: "ver", l: "版次", req: true, ver: true}], [{k: "idate", l: "生效日期", t: "date"}, {k: "owner", l: "負責人"}], [{k: "prod", l: "產品名稱"}, {k: "line", l: "生產線／製程"}]]},
       {h: "二、管制項目", type: "table", k: "t1", rows: 6, cols: [{l: "項次", w: "7%", num: true}, {l: "製程步驟", w: "24%"}, {l: "管制特性", w: "23%"}, {l: "規格／公差", w: "23%"}, {l: "管制方法", w: "23%"}]},
       {h: "三、簽核", type: "sig", k: "g1", rows: ["制定", "審核", "核准"]},
       {h: "四、版本歷程", type: "history"}
