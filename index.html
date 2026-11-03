@@ -9,8 +9,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/styles.css?v=2026-11-03.11">
-<link rel="stylesheet" href="assets/drawer.css?v=2026-11-03.11">
+<link rel="stylesheet" href="assets/styles.css?v=2026-11-03.12">
+<link rel="stylesheet" href="assets/drawer.css?v=2026-11-03.12">
 </head>
 <body>
 
@@ -45,6 +45,7 @@
   <div class="rec-bar" data-recbar hidden>
     <span class="rec-bar-text" data-recbar-text></span>
     <span class="rec-bar-ops">
+      <button type="button" class="btn btn-sm btn-ghost" data-act="rec-new">建立新表單</button>
       <button type="button" class="btn btn-sm" data-act="rec-edit">修改</button>
       <button type="button" class="btn btn-sm" data-act="rec-lock">鎖定</button>
       <button type="button" class="btn btn-sm btn-ghost" data-act="rec-close">結束檢視</button>
@@ -86,13 +87,13 @@
   </aside>
 </div>
 
-<script src="assets/config.js?v=2026-11-03.11"></script>
-<script src="assets/forms.js?v=2026-11-03.11"></script>
-<script src="assets/storage.js?v=2026-11-03.11"></script>
-<script src="assets/app.js?v=2026-11-03.11"></script>
+<script src="assets/config.js?v=2026-11-03.12"></script>
+<script src="assets/forms.js?v=2026-11-03.12"></script>
+<script src="assets/storage.js?v=2026-11-03.12"></script>
+<script src="assets/app.js?v=2026-11-03.12"></script>
 <script>
 (function () {
-  var SEEN = "2026-11-03.11";
+  var SEEN = "2026-11-03.12";
   fetch("version.json?t=" + Date.now(), { cache: "no-store" })
     .then(function (r) { if (!r.ok) throw new Error("no version"); return r.json(); })
     .then(function (d) {
