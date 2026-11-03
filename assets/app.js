@@ -731,10 +731,10 @@
     document.querySelector("[data-drawer]").hidden = true;
   }
 
-  function loadRecords() {
+  function loadRecords(silent) {
     var box = document.querySelector("[data-record-list]");
     if (!box) return;
-    box.innerHTML = '<p class="drawer-empty">載入中…</p>';
+    if (silent !== true) box.innerHTML = '<p class="drawer-empty">載入中…</p>';
     withTimeout(STORE.list(state.current), 12000, "list timeout").then(function (rows) {
       drawerRecords = rows;
       renderRecords();
@@ -1308,7 +1308,7 @@
             renderRecords();
             var badge = document.querySelector("[data-count]");
             if (badge) badge.textContent = drawerRecords.length;
-            setTimeout(loadRecords, 1500);
+            setTimeout(function () { loadRecords(true); }, 1500);
           });
         }
       }
