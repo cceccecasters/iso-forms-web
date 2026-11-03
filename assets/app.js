@@ -53,24 +53,54 @@
 
   // 取號 = 歷史紀錄現有最大號 + 1。純計算、不自增計數器，
   // 所以連續點「取號」會停在同一號，存檔後才會推進。
-  function serialOf(no, prefix, year) {
-    var m = String(no || "").match(new RegExp("^" + prefix + "-" + year + "-(\\d+)$"));
+  // fmt "year"：PREFIX-YYYY-NNN（預設）；fmt "seq"：PREFIX-NNN（文件類，跨年度連續）
+  function serialOf(no, prefix, year, fmt) {
+    var re = fmt === "seq"
+      ? new RegExp("^" + prefix + "-(\\d+)$")
+      : new RegExp("^" + prefix + "-" + year + "-(\\d+)$");
+    var m = String(no || "").match(re);
     return m ? parseInt(m[1], 10) : 0;
   }
 
-  function nextSerial(prefix) {
-    var year = new Date().getFullYear();
-    var f = FORMS.filter(function (x) { return x.prefix === prefix; })[0];
-    var rowsP = (window.ISOStore && f)
-      ? withTimeout(window.ISOStore.list(f.id), 8000, "serial timeout")
-      : Promise.resolve([]);
-    return rowsP.then(function (rows) {
-      var max = 0;
-      (rows || []).forEach(function (r) {
-        var n = serialOf(r.no, prefix, year);
-        if (n > max) max = n;
+  function serialText(prefix, year, n, fmt) {
+    return fmt === "seq"
+      ? prefix + "-" + String(n).padStart(3, "0")
+      : prefix + "-" + year + "-" + String(n).padStart(3, "0");
+  }
+
+  // 同一前綴可能由多張表單共用（例如 DOC-QA 的 SIP 與控制計畫），取號要跨表單合併計算
+  function formsWithPrefix(prefix) {
+    return FORMS.filter(function (x) {
+      if (x.prefix === prefix) return true;
+      return (x.sections || []).some(function (s) {
+        return (s.rows || []).some(function (row) {
+          return (row || []).some(function (c) { return c && c.serial === prefix; });
+        });
       });
-      return prefix + "-" + year + "-" + String(max + 1).padStart(3, "0");
+    });
+  }
+
+  function nextSerial(prefix, fmt, formId) {
+    var year = new Date().getFullYear();
+    var fs = formsWithPrefix(prefix);
+    if (!fs.length && formId) fs = FORMS.filter(function (x) { return x.id === formId; });
+    var start = 1;
+    fs.forEach(function (x) { if ((x.serialStart || 1) > start) start = x.serialStart || 1; });
+    var rowsP = window.ISOStore
+      ? Promise.all(fs.map(function (x) {
+          return withTimeout(window.ISOStore.list(x.id), 8000, "serial timeout")
+            .catch(function () { return []; });
+        }))
+      : Promise.resolve([]);
+    return rowsP.then(function (groups) {
+      var max = start - 1;
+      (groups || []).forEach(function (rows) {
+        (rows || []).forEach(function (r) {
+          var n = serialOf(r.no, prefix, year, fmt);
+          if (n > max) max = n;
+        });
+      });
+      return serialText(prefix, year, max + 1, fmt);
     }).catch(function () {
       return "";
     });
@@ -122,9 +152,23 @@
       var body = s.rows.map(function (row) {
         return "<tr>" + row.map(function (c) {
           var path = "s" + si + "." + c.k;
-          var cell = c.serial
-            ? '<div class="serial"><input type="text" data-k="' + esc(path) + '" id="' + esc(key(f.id, path)) + '" placeholder="' + esc(f.prefix) + "-" + new Date().getFullYear() + '-001"><button type="button" class="btn-mini" data-serial="' + esc(f.prefix) + '" data-target="' + esc(path) + '">取號</button></div>'
-            : input(f, path, { type: c.t, req: c.req, label: c.l });
+          var cell;
+          if (c.serial) {
+            var sp = typeof c.serial === "string" ? c.serial : f.prefix;
+            var sfmt = f.serialFmt || "year";
+            cell = '<div class="serial"><input type="text" data-k="' + esc(path) + '" id="' + esc(key(f.id, path)) +
+              '" placeholder="' + esc(serialText(sp, new Date().getFullYear(), f.serialStart || 1, sfmt)) +
+              '"><button type="button" class="btn-mini" data-serial="' + esc(sp) +
+              '" data-fmt="' + esc(sfmt) + '" data-form="' + esc(f.id) +
+              '" data-target="' + esc(path) + '">取號</button></div>';
+          } else if (c.ver) {
+            cell = '<div class="serial"><input type="text" data-k="' + esc(path) + '" id="' + esc(key(f.id, path)) +
+              '" placeholder="1.0" data-req="1" data-req-label="版次"><button type="button" class="btn-mini" data-version="' + esc(f.id) +
+              '" data-src="' + esc("s" + si + "." + (c.verSrc || "no")) +
+              '" data-target="' + esc(path) + '">領版</button></div>';
+          } else {
+            cell = input(f, path, { type: c.t, req: c.req, label: c.l });
+          }
           return '<th class="row-h">' + esc(c.l) + (c.req ? ' <span class="req">*</span>' : "") + "</th><td>" + cell + "</td>";
         }).join("") + "</tr>";
       }).join("");
@@ -519,11 +563,11 @@
   function metaOf(values, f) {
     return {
       no: values["s0.no"] || "",
-      applyDate: values["s0.applyDate"] || "",
+      applyDate: values[(f && f.applyDateKey) || "s0.applyDate"] || "",
       // 003 沒有 s0.applicant，申請人落在核准表的第 1 列
       applicant: values[(f && f.applicantKey) || "s0.applicant"] || "",
       dept: values["s0.dept"] || "",
-      product: values["s0.product"] || "",
+      product: values[(f && f.productKey) || "s0.product"] || "",
       itemNo: values["s0.itemNo"] || ""
     };
   }
@@ -534,7 +578,7 @@
     var noInput = card.querySelector('[data-k="s0.no"]');
     // 沒有單號就自動取號，避免紀錄無法識別
     var ready = (noInput && !String(noInput.value || "").trim())
-      ? nextSerial(f.prefix).then(function (no) {
+      ? nextSerial(f.prefix, f.serialFmt, f.id).then(function (no) {
           if (!no) throw new Error("serial failed");
           noInput.value = no;
           renderProgress(f.id);
@@ -571,7 +615,7 @@
       // 單號已被別筆紀錄用掉時，自動換新號，避免兩筆同號
       var dupe = rows.filter(function (r) { return m.no && r.no === m.no && r.rid !== rec.rid; })[0];
       if (!dupe) return STORE.save(rec);
-      return nextSerial(f.prefix).then(function (fresh) {
+      return nextSerial(f.prefix, f.serialFmt, f.id).then(function (fresh) {
         if (!fresh) return STORE.save(rec);
         noInput.value = fresh;
         rec.no = fresh;
@@ -936,7 +980,7 @@
           var ph = el.getAttribute("placeholder");
           if (!el.value) el.setAttribute("placeholder", "取號中…");
           setStatus("取號中…", "");
-          nextSerial(b.getAttribute("data-serial")).then(function (no) {
+          nextSerial(b.getAttribute("data-serial"), b.getAttribute("data-fmt"), b.getAttribute("data-form")).then(function (no) {
             b.disabled = false;
             if (ph !== null) el.setAttribute("placeholder", ph);
             if (!no) {
@@ -951,6 +995,46 @@
             setStatus("已取號 " + no + "（存檔後才會換下一號）", "ok");
           });
         }
+        return;
+      }
+
+      // 領版：同一個文件編號已有紀錄時，取下一個小版次（1.0 → 1.1 → 1.2）
+      var vb = e.target.closest("[data-version]");
+      if (vb) {
+        var vpath = vb.getAttribute("data-target");
+        var spath = vb.getAttribute("data-src");
+        var vcard = document.querySelector('[data-form="' + state.current + '"]');
+        var srcEl = vcard.querySelector('[data-k="' + spath + '"]');
+        var vEl = vcard.querySelector('[data-k="' + vpath + '"]');
+        var curNo = srcEl ? String(srcEl.value || "").trim() : "";
+        if (!curNo) {
+          setStatus("請先取號，再領取版次", "warn");
+          state.stickyUntil = Date.now() + 5000;
+          return;
+        }
+        vb.disabled = true;
+        setStatus("領取版次中…", "");
+        STORE.list(state.current).then(function (rows) {
+          var max = 0;
+          (rows || []).forEach(function (r) {
+            var vals = r.values || {};
+            if (String(vals[spath] || "").trim() !== curNo) return;
+            var m = String(vals[vpath] || "").match(/^(\d+)\.(\d+)$/);
+            if (!m) return;
+            var n = parseInt(m[1], 10) + parseInt(m[2], 10) / 10;
+            if (n > max) max = n;
+          });
+          var next = max ? (Math.round((max + 0.1) * 10) / 10).toFixed(1) : "1.0";
+          vEl.value = next;
+          saveNow();
+          renderProgress(state.current);
+          vb.disabled = false;
+          setStatus("版次 " + next + (max ? "（同編號前一版 +0.1）" : "（新文件初版）"), "ok");
+        }).catch(function () {
+          vb.disabled = false;
+          setStatus("領版失敗：無法讀取歷史紀錄，請確認網路後再試", "warn");
+          state.stickyUntil = Date.now() + 6000;
+        });
       }
     });
 
