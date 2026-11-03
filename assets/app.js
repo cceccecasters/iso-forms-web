@@ -821,7 +821,7 @@
     { t: "訂單與顧客", ids: ["FRM-QA-012", "FRM-QA-016"] },
     { t: "系統管理", ids: ["FRM-QA-008", "FRM-QA-009", "FRM-QA-011", "FRM-QA-017"] },
     { t: "組織與規劃", ids: ["FRM-QA-014", "FRM-QA-015", "FRM-QA-018", "FRM-QA-019", "FRM-QA-020"] },
-    { t: "文件與訓練", ids: ["DOC-PD-001", "DOC-QA-004", "DOC-EN-001", "DOC-QA-005"] }
+    { t: "文件與訓練", ids: ["SOP-PD-001", "SIP-QA-001", "FMEA-EN-001", "CLP-QA-001"] }
   ];
 
 
