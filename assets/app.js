@@ -1223,7 +1223,15 @@
     on("[data-act='record']", "click", saveRecord);
     on("[data-act='rec-edit']", "click", startEdit);
     on("[data-act='rec-lock']", "click", toggleLock);
-    on("[data-act='rec-close']", "click", closeRecordView);
+    // 不想修改舊紀錄時，直接開一張空白新表單
+  on("[data-act='rec-new']", "click", function () {
+    if (state.editingRid && !confirm("建立新表單會清空目前編輯中的內容，確定？")) return;
+    startFreshForm(state.current);
+    setStatus("已建立新表單，請重新填寫", "ok");
+    state.stickyUntil = Date.now() + 4000;
+  });
+
+  on("[data-act='rec-close']", "click", closeRecordView);
     on("[data-act='history']", "click", openDrawer);
     document.querySelectorAll("[data-drawer-close]").forEach(function (el) {
       el.addEventListener("click", closeDrawer);
