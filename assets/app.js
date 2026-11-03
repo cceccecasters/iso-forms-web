@@ -237,6 +237,7 @@
 
     // 通用表格：欄位可為固定列名(static)、流水號(num)、單選(opts) 或文字輸入
     table: function (f, s, si) {
+      var hasPhoto = (s.cols || []).some(function (c) { return c.photo; });
       var head = "<tr>" + s.cols.map(function (c) {
         return "<th" + (c.w ? ' style="width:' + c.w + '"' : "") + ">" + esc(c.l) + "</th>";
       }).join("") + "</tr>";
@@ -249,11 +250,13 @@
           if (c.num) body += '<td class="num">' + (i + 1) + "</td>";
           else if (c.static) body += "<td>" + esc((s.rowLabels && s.rowLabels[i]) || c.l) + "</td>";
           else if (c.opts) body += "<td>" + radioGroup(f, p, c.opts) + "</td>";
+          else if (c.photo) body += '<td class="cell-photo">' + photoCell(p + ".img") + "</td>";
           else body += "<td>" + input(f, p, { type: c.t, ph: c.ph }) + "</td>";
         }
         body += "</tr>";
       }
-      return '<table class="tbl tbl-grid"><thead>' + head + "</thead><tbody>" + body + "</tbody></table>";
+      return '<table class="tbl tbl-grid' + (hasPhoto ? " has-photo" : "") + '"><thead>' + head +
+        "</thead><tbody>" + body + "</tbody></table>";
     },
 
     assess: function (f, s, si) {
