@@ -813,6 +813,7 @@ input.is-invalid, textarea.is-invalid { border-color: var(--danger); background:
   font-size: 13.5px;
   color: #6b5b2e;
 }
+.rec-bar[hidden] { display: none !important; }
 .rec-bar-text { flex: 1 1 240px; line-height: 1.5; }
 .rec-bar-ops { display: flex; gap: 8px; flex-wrap: wrap; }
 .rec-bar.is-locked { background: #fdecec; border-top-color: #f3c9c9; color: #7c2f2f; }
