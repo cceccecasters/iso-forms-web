@@ -582,6 +582,17 @@
     };
   }
 
+  // 跨表單列出同一編號系列的紀錄（DOC-QA 由 SIP 與控制計畫共用）
+  function listAcross(ids) {
+    return Promise.all(ids.map(function (id) {
+      return withTimeout(STORE.list(id), 8000, "list timeout").catch(function () { return []; });
+    })).then(function (groups) {
+      var out = [];
+      (groups || []).forEach(function (g) { out = out.concat(g || []); });
+      return out;
+    });
+  }
+
   function saveRecord() {
     var f = formById(state.current);
     var card = document.querySelector('[data-form="' + f.id + '"]');
@@ -621,8 +632,10 @@
     var isUpdate = !!state.editingRid;
     if (isUpdate) rec.rid = state.editingRid;
     setStatus("儲存中…", "");
-    STORE.list(f.id).then(function (rows) {
-      // 單號已被別筆紀錄用掉時，自動換新號，避免兩筆同號
+    var siblingIds = formsWithPrefix(f.prefix).map(function (x) { return x.id; });
+    if (siblingIds.indexOf(f.id) < 0) siblingIds.push(f.id);
+    listAcross(siblingIds).then(function (rows) {
+      // 單號已被別筆紀錄用掉時，自動換新號，避免兩筆同號（含同系列的其他表單）
       var dupe = rows.filter(function (r) { return m.no && r.no === m.no && r.rid !== rec.rid; })[0];
       if (!dupe) return STORE.save(rec);
       return nextSerial(f.prefix, f.serialFmt, f.id).then(function (fresh) {
