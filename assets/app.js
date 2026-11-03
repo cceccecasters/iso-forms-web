@@ -9,7 +9,8 @@
   var HISTORY = window.ISO_HISTORY;
   var FILE_LIMIT = 1024 * 1024;
 
-  var state = { current: FORMS[0].id, files: {}, savedAt: null, editingRid: null };
+  var state = { current: FORMS[0].id, files: {}, savedAt: null, editingRid: null,
+    viewRid: null, recLocked: false };
 
   /* ---------- utils ---------- */
   function esc(s) {
@@ -594,6 +595,12 @@
   }
 
   function saveRecord() {
+    // 檢視中或已鎖定：不准寫入，避免誤存成新紀錄
+    if (state.viewRid && !state.editingRid) {
+      setStatus("目前為檢視模式，請先按「修改」才能儲存", "warn");
+      state.stickyUntil = Date.now() + 5000;
+      return;
+    }
     var f = formById(state.current);
     var card = document.querySelector('[data-form="' + f.id + '"]');
     var noInput = card.querySelector('[data-k="s0.no"]');
@@ -636,27 +643,25 @@
     if (siblingIds.indexOf(f.id) < 0) siblingIds.push(f.id);
     listAcross(siblingIds).then(function (rows) {
       // 單號已被別筆紀錄用掉時，自動換新號，避免兩筆同號（含同系列的其他表單）
-      var dupe = rows.filter(function (r) { return m.no && r.no === m.no && r.rid !== rec.rid; })[0];
+      var dupe = rows.filter(function (r) {
+        return m.no && r.no === m.no && r.rid !== rec.rid && r.form === f.id;
+      })[0];
       if (!dupe) return STORE.save(rec);
-      return nextSerial(f.prefix, f.serialFmt, f.id).then(function (fresh) {
-        if (!fresh) return STORE.save(rec);
-        noInput.value = fresh;
-        rec.no = fresh;
-        rec.values["s0.no"] = fresh;
-        renderProgress(f.id);
-        state.editingRid = null;
-        delete rec.rid;
-        return STORE.save(rec);
-      });
+      // 同表單、同單號 → 直接覆蓋原紀錄，單號不變（不再另取新號）
+      rec.rid = dupe.rid;
+      rec.values["s0.no"] = m.no;
+      return STORE.save(rec);
     }).then(function (saved) {
-      state.editingRid = saved.rid;
+      state.viewRid = saved.rid;
+      state.editingRid = null;
       // 寫入後回讀確認，避免儲存空間異常時靜默失敗
       return STORE.list(rec.form).then(function (rows) {
         refreshCount();
         var ok = rows.some(function (r) { return r.rid === saved.rid; });
         if (ok) {
-          setStatus((isUpdate ? "已更新紀錄 " : "紀錄已儲存 ") + (saved.no || ""), "ok");
+          setStatus((isUpdate ? "已覆蓋紀錄 " : "紀錄已儲存 ") + (saved.no || ""), "ok");
           state.stickyUntil = Date.now() + 5000;
+          applyRecMode();
         } else {
           setStatus("紀錄未寫入，請重新載入頁面後再試", "warn");
         }
@@ -730,13 +735,18 @@
         '<div class="rec-main">' +
         '<div class="rec-no">' + esc(r.no || "（未取號）") +
         (outdated ? '<span class="rec-tag">舊版次 ' + esc(r.version) + "</span>" : "") +
-        (r.pendingSync ? '<span class="rec-tag rec-tag-warn">未同步</span>' : "") + "</div>" +
+        (r.pendingSync ? '<span class="rec-tag rec-tag-warn">未同步</span>' : "") +
+        (r.values && r.values.__locked ? '<span class="rec-tag rec-tag-lock">已鎖定</span>' : "") + "</div>" +
         '<div class="rec-meta">' + esc(f.title) + "　" + esc([r.applyDate, r.applicant, r.dept].filter(Boolean).join(" · ") || "—") + "</div>" +
         "</div>" +
         '<div class="rec-time">' + esc(fmtTime(r.updatedAt)) + "</div>" +
         '<div class="rec-detail">' + detail + "</div>" +
         '<div class="rec-ops">' +
         '<button type="button" class="btn btn-sm" data-rec-open="' + esc(r.rid) + '">開啟</button>' +
+        '<button type="button" class="btn btn-sm" data-rec-edit="' + esc(r.rid) + '"' +
+        (r.values && r.values.__locked ? " disabled" : "") + ">修改</button>" +
+        '<button type="button" class="btn btn-sm" data-rec-lock="' + esc(r.rid) + '">' +
+        (r.values && r.values.__locked ? "解鎖" : "鎖定") + "</button>" +
         '<button type="button" class="btn btn-sm" data-rec-print="' + esc(r.rid) + '">列印</button>' +
         '<button type="button" class="btn btn-sm" data-rec-export="' + esc(r.rid) + '">匯出</button>' +
         '<button type="button" class="btn btn-sm btn-danger" data-rec-del="' + esc(r.rid) + '">刪除</button>' +
@@ -755,17 +765,106 @@
     return drawerRecords.filter(function (r) { return r.rid === rid; })[0];
   }
 
-  function loadRecordIntoForm(rec) {
+  function loadRecordIntoForm(rec, edit) {
     show(rec.form);
     state.files = rec.files || {};
     restore(rec.form, rec.values || {});
-    state.editingRid = rec.rid;
+    state.viewRid = rec.rid;
+    state.recLocked = !!(rec.values && rec.values.__locked);
+    state.editingRid = (edit && !state.recLocked) ? rec.rid : null;
     renderProgress(rec.form);
+    applyRecMode();
     if (rec.version !== formById(rec.form).version) {
       setStatus("此紀錄為 v" + rec.version + "，現行表單為 v" + formById(rec.form).version, "warn");
     } else {
-      setStatus("已載入紀錄 " + (rec.no || ""), "ok");
+      setStatus((edit ? "修改紀錄 " : "檢視紀錄 ") + (rec.no || ""), "ok");
     }
+    if (edit && !state.recLocked) {
+      var first = document.querySelector('[data-form="' + rec.form + '"] [data-k]');
+      if (first) first.focus();
+    }
+  }
+
+  /* ---------- 紀錄模式：檢視 / 修改 / 鎖定 ---------- */
+  function applyRecMode() {
+    var bar = document.querySelector("[data-recbar]");
+    if (!bar) return;
+    var card = document.querySelector('[data-form="' + state.current + '"]');
+    var saveBtn = document.querySelector("[data-act='record']");
+    var btnEdit = document.querySelector("[data-act='rec-edit']");
+    var btnLock = document.querySelector("[data-act='rec-lock']");
+    var txt = document.querySelector("[data-recbar-text]");
+    var viewing = !!state.viewRid;
+    var editing = !!state.editingRid;
+
+    if (card) card.classList.toggle("is-view", viewing && !editing);
+    bar.hidden = !viewing;
+    if (saveBtn) saveBtn.disabled = viewing && !editing;
+    if (!viewing) return;
+
+    bar.classList.toggle("is-locked", state.recLocked);
+    if (btnEdit) {
+      btnEdit.hidden = state.recLocked;
+      btnEdit.disabled = editing;
+      btnEdit.textContent = editing ? "修改中" : "修改";
+    }
+    if (btnLock) btnLock.textContent = state.recLocked ? "解鎖" : "鎖定";
+    if (txt) {
+      if (state.recLocked) {
+        txt.textContent = "🔒 此紀錄已鎖定，不可修改（僅能檢視、列印）。";
+      } else if (editing) {
+        txt.textContent = "修改模式：修改後按「儲存紀錄」會覆蓋同一筆紀錄，單號不變。";
+      } else {
+        txt.textContent = "檢視模式：紀錄為唯讀，按「修改」才能編輯。";
+      }
+    }
+  }
+
+  function startEdit() {
+    if (state.recLocked) {
+      setStatus("此紀錄已鎖定，無法修改", "warn");
+      state.stickyUntil = Date.now() + 4000;
+      return;
+    }
+    if (!state.viewRid) return;
+    state.editingRid = state.viewRid;
+    applyRecMode();
+    setStatus("已進入修改模式，儲存後會覆蓋原紀錄", "ok");
+    state.stickyUntil = Date.now() + 4000;
+  }
+
+  function closeRecordView() {
+    state.viewRid = null;
+    state.editingRid = null;
+    state.recLocked = false;
+    applyRecMode();
+    setStatus("已結束檢視（目前內容仍為該筆紀錄，可直接另存新紀錄）", "");
+  }
+
+  function toggleLock() {
+    var rec = findRecord(state.viewRid);
+    if (!rec) {
+      setStatus("請重新開啟歷史紀錄後再操作", "warn");
+      state.stickyUntil = Date.now() + 4000;
+      return;
+    }
+    var next = !state.recLocked;
+    if (next && !confirm("鎖定後此紀錄就不能再修改，確定鎖定 " + (rec.no || "") + "？")) return;
+    rec.values = rec.values || {};
+    if (next) rec.values.__locked = true;
+    else delete rec.values.__locked;
+    setStatus(next ? "鎖定中…" : "解鎖中…", "");
+    STORE.save(rec).then(function () {
+      state.recLocked = next;
+      if (next) state.editingRid = null;
+      applyRecMode();
+      setStatus((next ? "已鎖定紀錄 " : "已解鎖紀錄 ") + (rec.no || ""), "ok");
+      state.stickyUntil = Date.now() + 4000;
+      loadRecords();
+    }).catch(function () {
+      setStatus("操作失敗，請確認網路後再試", "warn");
+      state.stickyUntil = Date.now() + 6000;
+    });
   }
 
   function exportRecord(rec) {
@@ -786,6 +885,7 @@
     // 未知的 id 一律回到第一張，否則所有表單都會被隱藏（整頁空白）
     var fCheck = formById(id);
     if (fCheck.id !== id) id = fCheck.id;
+    var prevForm = state.current;
     state.current = id;
     document.querySelectorAll(".doc").forEach(function (d) { d.hidden = d.getAttribute("data-form") !== id; });
     document.querySelectorAll("[data-tab]").forEach(function (t) {
@@ -794,8 +894,13 @@
     if (location.hash.slice(1) !== id) history.replaceState(null, "", "#" + id);
     var f = formById(id);
     document.title = f.id + " " + f.title + " · " + META.companyCN;
-    state.files = {};
-    state.editingRid = null;
+    // 只有切換表單才清掉檢視／修改狀態；同表單重繪若清掉，存檔會變成新增一筆
+    if (prevForm !== id) {
+      state.files = {};
+      state.editingRid = null;
+      state.viewRid = null;
+      state.recLocked = false;
+    }
     if (!loadDraft(id)) setStatus("尚未填寫", "");
     else setStatus("已載入本機草稿", "ok");
 
@@ -807,7 +912,8 @@
     }
     renderProgress(id);
     refreshCount();
-    renderSideNav();  // 切換表單時同步側欄分類展開狀態
+    renderSideNav();
+    applyRecMode();  // 切換表單時同步側欄分類展開狀態
     window.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
   }
 
@@ -1013,6 +1119,9 @@
             }
             el.value = no;
             state.editingRid = null;  // 取新號 = 開新紀錄，不再覆蓋原紀錄
+        state.viewRid = null;
+        state.recLocked = false;
+        applyRecMode();
             saveNow();
             renderProgress(state.current);
             setStatus("已取號 " + no + "（存檔後才會換下一號）", "ok");
@@ -1081,6 +1190,9 @@
     if (d && !d.value) d.value = today();
 
     on("[data-act='record']", "click", saveRecord);
+    on("[data-act='rec-edit']", "click", startEdit);
+    on("[data-act='rec-lock']", "click", toggleLock);
+    on("[data-act='rec-close']", "click", closeRecordView);
     on("[data-act='history']", "click", openDrawer);
     document.querySelectorAll("[data-drawer-close]").forEach(function (el) {
       el.addEventListener("click", closeDrawer);
@@ -1097,16 +1209,35 @@
 
     on("[data-record-list]", "click", function (e) {
       var open = e.target.closest("[data-rec-open]");
+      var edit = e.target.closest("[data-rec-edit]");
+      var lock = e.target.closest("[data-rec-lock]");
       var print = e.target.closest("[data-rec-print]");
       var exp = e.target.closest("[data-rec-export]");
       var del = e.target.closest("[data-rec-del]");
       var rec;
       if (open) {
         rec = findRecord(open.getAttribute("data-rec-open"));
-        if (rec) { loadRecordIntoForm(rec); closeDrawer(); }
+        if (rec) { loadRecordIntoForm(rec, false); closeDrawer(); }
+      } else if (edit) {
+        rec = findRecord(edit.getAttribute("data-rec-edit"));
+        if (rec) { loadRecordIntoForm(rec, true); closeDrawer(); }
+      } else if (lock) {
+        rec = findRecord(lock.getAttribute("data-rec-lock"));
+        if (rec) {
+          var locked = !!(rec.values && rec.values.__locked);
+          if (!locked || confirm("解除鎖定後此紀錄可再次修改，確定解鎖 " + (rec.no || "") + "？")) {
+            rec.values = rec.values || {};
+            if (locked) delete rec.values.__locked; else rec.values.__locked = true;
+            STORE.save(rec).then(function () {
+              setStatus((locked ? "已解鎖 " : "已鎖定 ") + (rec.no || ""), "ok");
+              state.stickyUntil = Date.now() + 4000;
+              loadRecords();
+            });
+          }
+        }
       } else if (print) {
         rec = findRecord(print.getAttribute("data-rec-print"));
-        if (rec) { loadRecordIntoForm(rec); closeDrawer(); setTimeout(function () { window.print(); }, 120); }
+        if (rec) { loadRecordIntoForm(rec, false); closeDrawer(); setTimeout(function () { window.print(); }, 120); }
       } else if (exp) {
         rec = findRecord(exp.getAttribute("data-rec-export"));
         if (rec) exportRecord(rec);
