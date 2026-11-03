@@ -700,6 +700,7 @@
     withTimeout(STORE.list(state.current), 12000, "list timeout").then(function (rows) {
       drawerRecords = rows;
       renderRecords();
+      refreshCount();
     }).catch(function () {
       drawerRecords = [];
       box.innerHTML = '<p class="drawer-empty">讀取逾時：請關閉其他分頁後按「重新整理」。</p>';
@@ -1244,7 +1245,7 @@
       } else if (del) {
         rec = findRecord(del.getAttribute("data-rec-del"));
         if (rec && confirm("刪除紀錄 " + (rec.no || rec.rid) + "？此動作無法復原，其他同事下次開啟時也會消失。")) {
-          STORE.remove(rec.rid).then(function (ok) {
+          STORE.remove(rec.rid, rec.form).then(function (ok) {
             if (!ok) {
               setStatus("刪除失敗：雲端未回應，請確認網路後再試", "warn");
               state.stickyUntil = Date.now() + 6000;
