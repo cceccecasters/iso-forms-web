@@ -662,9 +662,10 @@
         refreshCount();
         var ok = rows.some(function (r) { return r.rid === saved.rid; });
         if (ok) {
-          setStatus((isUpdate ? "已覆蓋紀錄 " : "紀錄已儲存 ") + (saved.no || ""), "ok");
+          setStatus((isUpdate ? "已覆蓋紀錄 " : "紀錄已儲存 ") + (saved.no || "") +
+            "，已換成新表單", "ok");
           state.stickyUntil = Date.now() + 5000;
-          applyRecMode();
+          startFreshForm(rec.form);
         } else {
           setStatus("紀錄未寫入，請重新載入頁面後再試", "warn");
         }
@@ -672,6 +673,32 @@
     }).catch(function () {
       setStatus("紀錄儲存失敗", "warn");
     });
+  }
+
+  // 存檔後直接換成空白的新表單，避免同一份內容一直留在頁面上等下次誤存
+  function startFreshForm(formId) {
+    var f = formById(formId);
+    var card = document.querySelector('[data-form="' + f.id + '"]');
+    localStorage.removeItem(draftKey(f.id));
+    state.files = {};
+    state.viewRid = null;
+    state.editingRid = null;
+    state.recLocked = false;
+    if (card) {
+      card.querySelectorAll("[data-k]").forEach(function (el) {
+        if (el.type === "radio" || el.type === "checkbox") el.checked = false;
+        else el.value = "";
+      });
+      card.querySelectorAll("[data-preview]").forEach(function (img) {
+        img.hidden = true;
+        img.removeAttribute("src");
+      });
+      card.querySelectorAll("[data-clear-img]").forEach(function (b) { b.hidden = true; });
+      var d = card.querySelector('[data-k="s0.applyDate"], [data-k="s0.idate"]');
+      if (d) d.value = today();
+    }
+    applyRecMode();
+    renderProgress(formId);
   }
 
   function refreshCount() {
