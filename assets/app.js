@@ -563,6 +563,12 @@ function draftKey(formId) { return "iso:draft:" + (userName() || "共用") + ":"
     });
     card.querySelectorAll("[data-preview]").forEach(function (img) { img.hidden = true; img.removeAttribute("src"); });
     state.files = {};
+    // 簽名是畫在 canvas 上，光清 state.files 不會擦掉筆跡，要重畫一次
+    syncSigPads(card);
+    card.querySelectorAll(".sig-pad").forEach(function (pad) { pad.classList.remove("has-ink"); });
+    state.viewRid = null;
+    state.recLocked = false;
+    applyRecMode();
     setStatus("草稿已清除", "");
     renderProgress(f.id);
   }
