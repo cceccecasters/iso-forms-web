@@ -326,13 +326,13 @@ function draftKey(formId) { return "iso:draft:" + (userName() || "共用") + ":"
     },
 
     sig: function (f, s, si) {
-      var head = "<tr><th style=\"width:26%\">" + (s.opinion ? "單位" : "角色") + "</th><th>姓名</th>" +
-        (s.opinion ? "<th>意見</th>" : "") + "<th style=\"width:18%\">簽核</th><th style=\"width:18%\">日期</th></tr>";
+      var head = "<tr><th style=\"width:22%\">" + (s.opinion ? "單位" : "角色") + "</th><th>姓名</th>" +
+        (s.opinion ? "<th>意見</th>" : "") + "<th style=\"width:26%\">簽名（手寫）</th><th style=\"width:16%\">日期</th></tr>";
       var body = s.rows.map(function (r, i) {
         var p = "s" + si + "." + s.k + "." + i;
         return "<tr><th class=\"row-h\">" + esc(r) + "</th><td>" + input(f, p + ".name", {}) + "</td>" +
           (s.opinion ? "<td>" + input(f, p + ".opinion", {}) + "</td>" : "") +
-          "<td>" + input(f, p + ".sign", {}) + "</td><td>" + input(f, p + ".date", { type: "date" }) + "</td></tr>";
+          '<td class="sig-cell">' + sigPad(p + ".sign") + "</td><td>" + input(f, p + ".date", { type: "date" }) + "</td></tr>";
       }).join("");
       return '<table class="tbl tbl-sig"><thead>' + head + "</thead><tbody>" + body + "</tbody></table>";
     },
@@ -498,6 +498,50 @@ function draftKey(formId) { return "iso:draft:" + (userName() || "共用") + ":"
       return true;
     } catch (e) { return false; }
   }
+  function sigPad(path) {
+    return '<div class="sig-pad" data-sig="' + esc(path) + '">' +
+      '<canvas data-sig-canvas="' + esc(path) + '"></canvas>' +
+      '<span class="sig-hint">手寫簽名</span></div>' +
+      '<button type="button" class="sig-clear" data-sig-clear="' + esc(path) + '">清除</button>';
+  }
+
+  function paintSig(cv, key) {
+    var ctx = cv.getContext("2d");
+    var dpr = parseFloat(cv.getAttribute("data-dpr") || "1");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    ctx.lineWidth = 1.6; ctx.lineCap = "round"; ctx.lineJoin = "round";
+    ctx.strokeStyle = "#1b2b3a"; ctx.fillStyle = "#1b2b3a";
+    var pad = cv.parentNode;
+    var src = state.files && state.files[key];
+    if (src) {
+      var img = new Image();
+      img.onload = function () {
+        ctx.drawImage(img, 0, 0, cv.width / dpr, cv.height / dpr);
+      };
+      img.src = src;
+      if (pad) pad.classList.add("has-ink");
+    } else if (pad) {
+      pad.classList.remove("has-ink");
+    }
+  }
+
+  function syncSigPads(card) {
+    if (!card) return;
+    card.querySelectorAll("canvas[data-sig-canvas]").forEach(function (cv) {
+      var r = cv.getBoundingClientRect();
+      var w = Math.round(r.width), h = Math.round(r.height);
+      var dpr = window.devicePixelRatio || 1;
+      if (w > 0 && cv.getAttribute("data-w") !== String(w)) {
+        cv.width = Math.round(w * dpr);
+        cv.height = Math.round(h * dpr);
+        cv.setAttribute("data-w", String(w));
+        cv.setAttribute("data-dpr", String(dpr));
+      }
+      paintSig(cv, cv.getAttribute("data-sig-canvas"));
+    });
+  }
+
   // 表單內所有日期欄未填時預設當日
   function fillTodayDates(card) {
     if (!card) return;
@@ -738,6 +782,7 @@ function draftKey(formId) { return "iso:draft:" + (userName() || "共用") + ":"
       card.querySelectorAll("[data-clear-img]").forEach(function (b) { b.hidden = true; });
       fillTodayDates(card);
     }
+    syncSigPads(card);
     applyRecMode();
     renderProgress(formId);
   }
@@ -986,6 +1031,7 @@ function draftKey(formId) { return "iso:draft:" + (userName() || "共用") + ":"
 
     // 所有日期欄未填時預設當日，避免每次都要手動選
     fillTodayDates(document.querySelector('[data-form="' + id + '"]'));
+    syncSigPads(document.querySelector('[data-form="' + id + '"]'));
     renderProgress(id);
     refreshCount();
     renderSideNav();
@@ -1422,6 +1468,46 @@ function draftKey(formId) { return "iso:draft:" + (userName() || "共用") + ":"
     };
     reader.readAsDataURL(file);
   }
+
+  /* ---------- 手寫簽名 ---------- */
+  var SIG = null;
+  document.addEventListener("pointerdown", function (e) {
+    var cv = e.target.closest ? e.target.closest("canvas[data-sig-canvas]") : null;
+    if (!cv || cv.closest(".is-view")) return;
+    e.preventDefault();
+    try { cv.setPointerCapture(e.pointerId); } catch (err) {}
+    var r = cv.getBoundingClientRect();
+    var ctx = cv.getContext("2d");
+    SIG = { cv: cv, ctx: ctx, r: r };
+    var x = e.clientX - r.left, y = e.clientY - r.top;
+    ctx.beginPath(); ctx.arc(x, y, 0.9, 0, Math.PI * 2); ctx.fill();
+    cv.parentNode.classList.add("has-ink");
+  });
+  document.addEventListener("pointermove", function (e) {
+    if (!SIG) return;
+    var x = e.clientX - SIG.r.left, y = e.clientY - SIG.r.top;
+    SIG.ctx.lineTo(x, y);
+    SIG.ctx.stroke();
+    SIG.ctx.beginPath();
+    SIG.ctx.moveTo(x, y);
+  });
+  document.addEventListener("pointerup", function () {
+    if (!SIG) return;
+    var cv = SIG.cv;
+    SIG = null;
+    state.files[cv.getAttribute("data-sig-canvas")] = cv.toDataURL("image/png");
+    saveNow();
+    renderProgress(state.current);
+  });
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest ? e.target.closest("[data-sig-clear]") : null;
+    if (!b) return;
+    var key = b.getAttribute("data-sig-clear");
+    delete state.files[key];
+    var cv = document.querySelector('canvas[data-sig-canvas="' + key + '"]');
+    if (cv) paintSig(cv, key);
+    saveNow();
+  });
 
   document.addEventListener("DOMContentLoaded", boot);
 })();
