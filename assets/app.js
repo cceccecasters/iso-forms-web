@@ -445,6 +445,8 @@ function draftKey(formId) { return "iso:draft:" + (userName() || "共用") + ":"
   }
   function saveNow() {
     var f = formById(state.current);
+    // 「共用」代表還沒指定操作人，寫草稿會讓下一個人看到別人的內容，因此不存
+    if ((userName() || "共用") === "共用") return;
     var payload = { id: f.id, version: f.version, at: new Date().toISOString(), values: collect(f.id), files: state.files };
     try {
       localStorage.setItem(draftKey(f.id), JSON.stringify(payload));
@@ -472,7 +474,10 @@ function draftKey(formId) { return "iso:draft:" + (userName() || "共用") + ":"
 
   function renderOperator() {
     var el = document.querySelector("[data-operator]");
-    if (el) el.textContent = userName() || "未設定";
+    if (!el) return;
+    var n = userName() || "共用";
+    el.textContent = n === "共用" ? "共用（草稿不保存）" : n;
+    el.title = n === "共用" ? "尚未指定操作人，草稿不會保存；請按「切換」輸入姓名" : "";
   }
 
   function ensureUser() {
