@@ -19,7 +19,11 @@
     });
   }
   function key(formId, path) { return formId + "::" + path; }
-  function draftKey(formId) { return "iso:draft:" + formId; }
+  var USER_KEY = "iso:user";
+function userName() { try { return localStorage.getItem(USER_KEY) || ""; } catch (e) { return ""; } }
+function setUserName(v) { try { localStorage.setItem(USER_KEY, v); } catch (e) {} }
+// 草稿依操作人分開存，共用電腦才不會看到別人填到一半的表單
+function draftKey(formId) { return "iso:draft:" + (userName() || "共用") + ":" + formId; }
   function formById(id) {
     return FORMS.filter(function (f) { return f.id === id; })[0] || FORMS[0];
   }
@@ -454,6 +458,30 @@
       setStatus("草稿儲存失敗（可能超過瀏覽器容量）", "warn");
     }
   }
+  // 舊版草稿沒有操作人，殘留會讓別人看到上一個人的內容，開機時直接清掉
+  function purgeLegacyDrafts() {
+    try {
+      var del = [];
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf("iso:draft:") === 0 && k.split(":").length === 3) del.push(k);
+      }
+      del.forEach(function (k) { localStorage.removeItem(k); });
+    } catch (e) {}
+  }
+
+  function renderOperator() {
+    var el = document.querySelector("[data-operator]");
+    if (el) el.textContent = userName() || "未設定";
+  }
+
+  function ensureUser() {
+    if (userName()) return;
+    var v = prompt("請輸入您的姓名（只存在這台電腦，用來區分各人的草稿）", "");
+    v = (v || "").trim();
+    setUserName(v || "共用");
+  }
+
   function loadDraft(formId) {
     state.files = {};
     try {
@@ -949,7 +977,7 @@
       state.recLocked = false;
     }
     if (!loadDraft(id)) setStatus("尚未填寫", "");
-    else setStatus("已載入本機草稿", "ok");
+    else setStatus("已載入本機草稿（操作人：" + (userName() || "共用") + "）", "ok");
 
     // 所有日期欄未填時預設當日，避免每次都要手動選
     fillTodayDates(document.querySelector('[data-form="' + id + '"]'));
@@ -1053,6 +1081,10 @@
 
   /* ---------- boot ---------- */
   function boot() {
+    purgeLegacyDrafts();
+    ensureUser();
+    renderOperator();
+
     var nav = document.querySelector("[data-nav]");
     var main = document.querySelector("[data-main]");
     renderSideNav();
@@ -1240,6 +1272,33 @@
     if (state.editingRid && !confirm("建立新表單會清空目前編輯中的內容，確定？")) return;
     startFreshForm(state.current);
     setStatus("已建立新表單，請重新填寫", "ok");
+    state.stickyUntil = Date.now() + 4000;
+  });
+
+  // 切換操作人：先存回自己的草稿，再載入新操作人的草稿（別人的內容不會帶過來）
+  on("[data-operator-switch]", "click", function () {
+    var cur = userName() || "共用";
+    var v = prompt("切換操作人（目前：" + cur + "）", cur === "共用" ? "" : cur);
+    if (v === null) return;
+    v = v.trim();
+    if (!v) return;
+    saveNow();
+    setUserName(v);
+    renderOperator();
+    state.viewRid = null;
+    state.editingRid = null;
+    state.recLocked = false;
+    state.files = {};
+    var card = document.querySelector('[data-form="' + state.current + '"]');
+    if (card) {
+      card.querySelectorAll("[data-k]").forEach(function (el) {
+        if (el.type === "radio" || el.type === "checkbox") el.checked = false; else el.value = "";
+      });
+      card.querySelectorAll("[data-preview]").forEach(function (img) { img.hidden = true; img.removeAttribute("src"); });
+      card.querySelectorAll("[data-clear-img]").forEach(function (b) { b.hidden = true; });
+    }
+    show(state.current);
+    setStatus("已切換操作人：" + v + "（草稿各自獨立）", "ok");
     state.stickyUntil = Date.now() + 4000;
   });
 
