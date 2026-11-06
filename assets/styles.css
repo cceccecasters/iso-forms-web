@@ -829,6 +829,7 @@ input.is-invalid, textarea.is-invalid { border-color: var(--danger); background:
 
 /* ---------- 登入閘門 ---------- */
 body.locked { overflow: hidden; }
+.gate[hidden] { display: none !important; }
 .gate {
   position: fixed;
   inset: 0;

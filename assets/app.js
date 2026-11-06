@@ -480,11 +480,36 @@ function draftKey(formId) { return "iso:draft:" + (userName() || "共用") + ":"
     el.title = n === "共用" ? "尚未指定操作人，草稿不會保存；請按「切換」輸入姓名" : "";
   }
 
-  function ensureUser() {
-    if (userName()) return;
-    var v = prompt("請輸入您的姓名（只存在這台電腦，用來區分各人的草稿）", "");
-    v = (v || "").trim();
-    setUserName(v || "共用");
+  // 操作人一律要填：用不可關閉的畫面詢問，不提供取消
+  function openNameGate(onDone) {
+    var box = document.querySelector("[data-name-gate]");
+    if (!box) { if (onDone) onDone(); return; }
+    var inp = box.querySelector("[data-name-input]");
+    var err = box.querySelector("[data-name-err]");
+    var form = box.querySelector("[data-name-form]");
+    box.hidden = false;
+    document.body.classList.add("locked");
+    if (inp) {
+      inp.value = (userName() && userName() !== "共用") ? userName() : "";
+      setTimeout(function () { inp.focus(); inp.select(); }, 120);
+    }
+    if (err) err.hidden = true;
+    form.onsubmit = function (e) {
+      e.preventDefault();
+      var v = String((inp && inp.value) || "").trim();
+      if (!v || v === "共用") { if (err) err.hidden = false; if (inp) inp.focus(); return; }
+      setUserName(v);
+      renderOperator();
+      box.hidden = true;
+      document.body.classList.remove("locked");
+      if (onDone) onDone();
+    };
+  }
+
+  function askOperator(onDone) {
+    var n = (userName() || "").trim();
+    if (n && n !== "共用") { renderOperator(); onDone(); return; }
+    openNameGate(onDone);
   }
 
   function loadDraft(formId) {
@@ -1162,7 +1187,7 @@ function draftKey(formId) { return "iso:draft:" + (userName() || "共用") + ":"
     var g = document.querySelector("[data-gate]");
     if (g && g.parentNode) g.parentNode.removeChild(g);
     document.body.classList.remove("locked");
-    startApp();
+    askOperator(startApp);
   }
 
   function bindGate() {
@@ -1198,7 +1223,6 @@ function draftKey(formId) { return "iso:draft:" + (userName() || "共用") + ":"
 
   function startApp() {
     purgeLegacyDrafts();
-    ensureUser();
     renderOperator();
 
     var nav = document.querySelector("[data-nav]");
@@ -1399,14 +1423,8 @@ function draftKey(formId) { return "iso:draft:" + (userName() || "共用") + ":"
 
   // 切換操作人：先存回自己的草稿，再載入新操作人的草稿（別人的內容不會帶過來）
   on("[data-operator-switch]", "click", function () {
-    var cur = userName() || "共用";
-    var v = prompt("切換操作人（目前：" + cur + "）", cur === "共用" ? "" : cur);
-    if (v === null) return;
-    v = v.trim();
-    if (!v) return;
     saveNow();
-    setUserName(v);
-    renderOperator();
+    openNameGate(function () {
     state.viewRid = null;
     state.editingRid = null;
     state.recLocked = false;
@@ -1420,8 +1438,9 @@ function draftKey(formId) { return "iso:draft:" + (userName() || "共用") + ":"
       card.querySelectorAll("[data-clear-img]").forEach(function (b) { b.hidden = true; });
     }
     show(state.current);
-    setStatus("已切換操作人：" + v + "（草稿各自獨立）", "ok");
+    setStatus("已切換操作人：" + userName() + "（草稿各自獨立）", "ok");
     state.stickyUntil = Date.now() + 4000;
+    });
   });
 
   on("[data-act='rec-close']", "click", closeRecordView);
