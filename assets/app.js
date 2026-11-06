@@ -1136,8 +1136,67 @@ function draftKey(formId) { return "iso:draft:" + (userName() || "共用") + ":"
     }
   }
 
+  /* ---------- 登入閘門 ---------- */
+  var AUTH_KEY = "iso:auth";
+  var AUTH_HASH = "5b97afbcc06831985bad38df8c1ae91bed9be502121710845b1d681d247a1cf0";
+  var AUTH_DAYS = 30;
+
+  function authOK() {
+    try {
+      var t = parseInt(localStorage.getItem(AUTH_KEY) || "0", 10);
+      return t > 0 && (Date.now() - t) < AUTH_DAYS * 864e5;
+    } catch (e) { return false; }
+  }
+
+  function sha256Hex(txt) {
+    if (!(window.crypto && window.crypto.subtle)) return Promise.reject(new Error("nocrypto"));
+    var bytes = new TextEncoder().encode(txt);
+    return window.crypto.subtle.digest("SHA-256", bytes).then(function (buf) {
+      return Array.prototype.map.call(new Uint8Array(buf), function (b) {
+        return ("0" + b.toString(16)).slice(-2);
+      }).join("");
+    });
+  }
+
+  function unlockApp() {
+    var g = document.querySelector("[data-gate]");
+    if (g && g.parentNode) g.parentNode.removeChild(g);
+    document.body.classList.remove("locked");
+    startApp();
+  }
+
+  function bindGate() {
+    var form = document.querySelector("[data-gate-form]");
+    if (!form) return;
+    document.body.classList.add("locked");
+    var inp = form.querySelector("[data-gate-input]");
+    var err = form.querySelector("[data-gate-err]");
+    var btn = form.querySelector(".gate-btn");
+    setTimeout(function () { if (inp) inp.focus(); }, 120);
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var val = String((inp && inp.value) || "");
+      if (!val) { if (err) err.hidden = false; return; }
+      if (btn) btn.disabled = true;
+      sha256Hex(val).then(function (h) {
+        if (h !== AUTH_HASH) throw new Error("bad");
+        try { localStorage.setItem(AUTH_KEY, String(Date.now())); } catch (e2) {}
+        unlockApp();
+      }).catch(function () {
+        if (err) err.hidden = false;
+        if (btn) btn.disabled = false;
+        if (inp) { inp.value = ""; inp.focus(); }
+      });
+    });
+  }
+
   /* ---------- boot ---------- */
   function boot() {
+    if (!authOK()) { bindGate(); return; }
+    unlockApp();
+  }
+
+  function startApp() {
     purgeLegacyDrafts();
     ensureUser();
     renderOperator();
@@ -1321,7 +1380,13 @@ function draftKey(formId) { return "iso:draft:" + (userName() || "共用") + ":"
     var d = document.querySelector('[data-form="' + f.id + '"] [data-k="s0.applyDate"]');
     if (d && !d.value) d.value = today();
 
-    on("[data-act='record']", "click", saveRecord);
+    on("[data-act='logout']", "click", function () {
+    if (!confirm("確定登出？下次進入需要重新輸入密碼。")) return;
+    try { localStorage.removeItem("iso:auth"); } catch (e) {}
+    location.reload();
+  });
+
+  on("[data-act='record']", "click", saveRecord);
     on("[data-act='rec-edit']", "click", startEdit);
     on("[data-act='rec-lock']", "click", toggleLock);
     // 不想修改舊紀錄時，直接開一張空白新表單
