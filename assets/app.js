@@ -1567,6 +1567,7 @@ function draftKey(formId) { return "iso:draft:" + (userName() || "共用") + ":"
   }
 
   function handleImage(el) {
+    if (el.closest(".is-view")) return;   // 檢視／鎖定時不接受上傳
     var file = el.files && el.files[0];
     if (!file) return;
     if (file.size > FILE_LIMIT) { setStatus("圖片超過 2 MB，請先壓縮", "warn"); el.value = ""; return; }

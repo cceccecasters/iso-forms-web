@@ -896,8 +896,13 @@ body.locked { overflow: hidden; }
 .doc.is-view .btn-mini,
 .doc.is-view .file-btn,
 .doc.is-view [data-photo],
+.doc.is-view [data-img],
+.doc.is-view .img-drop,
+.doc.is-view [data-clear-img],
 .doc.is-view canvas[data-sig-canvas],
 .doc.is-view [data-sig-clear] { pointer-events: none; }
+.doc.is-view .img-drop { opacity: .9; cursor: default; }
+.doc.is-view .img-clear { display: none !important; }
 .doc.is-view [data-k] { background: #f6f7f8; color: #4a5358; }
 .rec-tag-lock { background: #f3c9c9; color: #7c2f2f; }
 
