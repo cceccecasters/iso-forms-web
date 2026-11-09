@@ -9,8 +9,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/styles.css?v=2026-11-09.8">
-<link rel="stylesheet" href="assets/drawer.css?v=2026-11-09.8">
+<link rel="stylesheet" href="assets/styles.css?v=2026-11-10.1">
+<link rel="stylesheet" href="assets/drawer.css?v=2026-11-10.1">
 </head>
 <body class="locked">
 
@@ -24,6 +24,20 @@
     <p class="gate-err" data-gate-err hidden>密碼不正確，請再試一次</p>
     <p class="gate-note">彰銓企業股份有限公司</p>
   </form>
+</div>
+
+<div class="lb" data-lb hidden>
+  <button type="button" class="lb-btn lb-close" data-lb-close aria-label="關閉">×</button>
+  <button type="button" class="lb-btn lb-prev" data-lb-prev aria-label="上一張">‹</button>
+  <button type="button" class="lb-btn lb-next" data-lb-next aria-label="下一張">›</button>
+  <div class="lb-stage" data-lb-stage>
+    <img class="lb-img" data-lb-img alt="照片放大檢視" />
+  </div>
+  <div class="lb-bar">
+    <span class="lb-cap" data-lb-cap>1 / 1</span>
+    <a class="lb-open" data-lb-open target="_blank" rel="noopener">另開原圖</a>
+    <span class="lb-tip">滾輪或雙指縮放 · 拖曳移動 · Esc 關閉</span>
+  </div>
 </div>
 
 <div class="gate" data-name-gate hidden>
@@ -112,13 +126,13 @@
   </aside>
 </div>
 
-<script src="assets/config.js?v=2026-11-09.8"></script>
-<script src="assets/forms.js?v=2026-11-09.8"></script>
-<script src="assets/storage.js?v=2026-11-09.8"></script>
-<script src="assets/app.js?v=2026-11-09.8"></script>
+<script src="assets/config.js?v=2026-11-10.1"></script>
+<script src="assets/forms.js?v=2026-11-10.1"></script>
+<script src="assets/storage.js?v=2026-11-10.1"></script>
+<script src="assets/app.js?v=2026-11-10.1"></script>
 <script>
 (function () {
-  var SEEN = "2026-11-09.8";
+  var SEEN = "2026-11-10.1";
   fetch("version.json?t=" + Date.now(), { cache: "no-store" })
     .then(function (r) { if (!r.ok) throw new Error("no version"); return r.json(); })
     .then(function (d) {

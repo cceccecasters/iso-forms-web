@@ -830,6 +830,108 @@ input.is-invalid, textarea.is-invalid { border-color: var(--danger); background:
   font-size: 11px; color: #849592; text-decoration: underline;
 }
 
+/* ---------- 圖片放大：燈箱與放大鏡 ---------- */
+.photo-cell { position: relative; }
+.photo-cell:has(img[data-preview]:not([hidden])) .img-zoom,
+.img-drop:has(img[data-preview]:not([hidden])) .img-zoom { display: inline-flex; }
+
+.img-zoom {
+  position: absolute;
+  right: 4px;
+  top: 4px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid #cfdad7;
+  background: rgba(255, 255, 255, .92);
+  color: #2b4a45;
+  font-size: 13px;
+  line-height: 1;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  cursor: zoom-in;
+  z-index: 3;
+}
+.img-drop.has-img .img-zoom,
+.photo-cell.has-img .img-zoom { display: inline-flex; }
+.doc.is-view .img-zoom { display: inline-flex; }
+
+.lb {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: flex;
+  flex-direction: column;
+  background: rgba(10, 18, 20, .93);
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+.lb[hidden] { display: none !important; }
+.lb-stage {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  touch-action: none;
+}
+.lb-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  transform-origin: center center;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.lb-img:active { cursor: grabbing; }
+.lb-btn {
+  position: absolute;
+  border: 0;
+  background: rgba(255, 255, 255, .14);
+  color: #fff;
+  border-radius: 50%;
+  width: 42px;
+  height: 42px;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+.lb-btn:hover { background: rgba(255, 255, 255, .26); }
+.lb-close { top: 14px; right: 14px; }
+.lb-prev { left: 12px; top: 50%; transform: translateY(-50%); }
+.lb-next { right: 12px; top: 50%; transform: translateY(-50%); }
+.lb-bar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 16px 14px;
+  color: #d7e2e0;
+  font-size: 13px;
+}
+.lb-cap { font-variant-numeric: tabular-nums; }
+.lb-open { color: #9fd8c8; text-decoration: underline; }
+.lb-tip { margin-left: auto; opacity: .7; font-size: 12px; }
+body.lb-open { overflow: hidden; }
+
+.lens {
+  position: fixed;
+  z-index: 8999;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .28);
+  background-repeat: no-repeat;
+  pointer-events: none;
+}
+
+@media print {
+  .lb, .lens, .img-zoom { display: none !important; }
+}
+@media (max-width: 640px) {
+  .lb-tip { display: none; }
+}
+
 /* ---------- 登入閘門 ---------- */
 body.locked { overflow: hidden; }
 .gate[hidden] { display: none !important; }
