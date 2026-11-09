@@ -538,25 +538,40 @@ function draftKey(formId) { return "iso:draft:" + (userName() || "共用") + ":"
   }
 
   function paintSig(cv, key) {
+    var pad = cv.parentNode;
+    var dpr = parseFloat(cv.dataset.dpr || "1");
     var ctx = cv.getContext("2d");
-    var dpr = parseFloat(cv.getAttribute("data-dpr") || "1");
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, cv.width, cv.height);
     ctx.lineWidth = 1.6; ctx.lineCap = "round"; ctx.lineJoin = "round";
     ctx.strokeStyle = "#1b2b3a"; ctx.fillStyle = "#1b2b3a";
-    var pad = cv.parentNode;
     var src = state.files && state.files[key];
-    if (src) {
-      var img = new Image();
-      img.onload = function () {
-        ctx.drawImage(img, 0, 0, cv.width / dpr, cv.height / dpr);
-      };
-      img.src = src;
-      if (pad) pad.classList.add("has-ink");
-    } else if (pad) {
-      pad.classList.remove("has-ink");
+    var img = pad ? pad.querySelector(".sig-img") : null;
+    if (!src) {
+      if (img) img.remove();
+      if (pad) pad.classList.remove("has-ink");
+      return;
     }
+    if (String(src).indexOf("data:") === 0) {
+      if (img) img.remove();
+      var el = new Image();
+      el.onload = function () {
+        ctx.drawImage(el, 0, 0, cv.width / dpr, cv.height / dpr);
+      };
+      el.src = src;
+    } else {
+      if (!img) {
+        img = document.createElement("img");
+        img.className = "sig-img";
+        img.alt = "簽名";
+        pad.appendChild(img);
+      }
+      img.src = src;
+      img.hidden = false;
+    }
+    if (pad) pad.classList.add("has-ink");
   }
+
 
   function syncSigPads(card) {
     if (!card) return;
@@ -937,6 +952,7 @@ function draftKey(formId) { return "iso:draft:" + (userName() || "共用") + ":"
     state.editingRid = (edit && !state.recLocked) ? rec.rid : null;
     renderProgress(rec.form);
     applyRecMode();
+    syncSigPads(vcard);
     if (rec.version !== formById(rec.form).version) {
       setStatus("此紀錄為 v" + rec.version + "，現行表單為 v" + formById(rec.form).version, "warn");
     } else {
@@ -1576,6 +1592,13 @@ function draftKey(formId) { return "iso:draft:" + (userName() || "共用") + ":"
     try { cv.setPointerCapture(e.pointerId); } catch (err) {}
     var r = cv.getBoundingClientRect();
     var ctx = cv.getContext("2d");
+    // 舊簽名是雲端圖時先移除，避免 canvas 被跨網域圖片汙染而無法轉存
+    var oldImg = cv.parentNode ? cv.parentNode.querySelector(".sig-img") : null;
+    if (oldImg) {
+      oldImg.remove();
+      delete state.files[cv.getAttribute("data-sig-canvas")];
+      paintSig(cv, cv.getAttribute("data-sig-canvas"));
+    }
     SIG = { cv: cv, ctx: ctx, r: r };
     var x = e.clientX - r.left, y = e.clientY - r.top;
     ctx.beginPath(); ctx.arc(x, y, 0.9, 0, Math.PI * 2); ctx.fill();

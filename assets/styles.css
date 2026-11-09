@@ -823,6 +823,7 @@ input.is-invalid, textarea.is-invalid { border-color: var(--danger); background:
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
   font-size: 11.5px; color: #a3b2af; pointer-events: none;
 }
+.sig-pad .sig-img { position: absolute; left: 4px; top: 4px; width: calc(100% - 8px); height: calc(100% - 8px); object-fit: contain; pointer-events: none; }
 .sig-pad.has-ink .sig-hint { display: none; }
 .sig-clear {
   margin-top: 1px; border: 0; background: none; padding: 0; cursor: pointer;
