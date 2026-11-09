@@ -113,6 +113,9 @@ window.ISO_HISTORY = {
     ["1.1", "2026-11-03", "v1.1 精簡版：章節 9→4，控制計畫表 7 欄→4 欄；移除反應計畫、量測校正等區塊", ""],
     ["1.2", "2026-11-03", "文件編號改為 CLP-QA-001，取號自 CLP-QA-01 起（原 DOC-QA-005）", ""],
     ["1.3", "2026-11-03", "v1.3 管制項目新增照片欄", "文件管制人員"]
+  ],
+  "FRM-SL-001": [
+    ["1.0", "2026-11-09", "初版發行（依派工單規格欄位建立）", ""]
   ]
 };
 
@@ -1116,6 +1119,51 @@ sections: [
       {h: "二、管制項目", type: "table", k: "t1", rows: 6, cols: [{l: "項次", w: "6%", num: true}, {l: "製程步驟", w: "20%"}, {l: "管制特性", w: "20%"}, {l: "規格／公差", w: "18%"}, {l: "管制方法", w: "18%"}, {l: "照片", w: "18%", photo: true}]},
       {h: "三、簽核", type: "sig", k: "g1", rows: ["制定", "審核", "核准"]},
       {h: "四、版本歷程", type: "history"}
+    ]
+  },
+  {
+    id: "FRM-SL-001",
+    title: "客戶樣品單",
+    prefix: "SPL",
+    version: "1.0",
+    effective: "2026-11-09",
+    clause: "ISO 9001:2015 §8.2.2 產品與服務要求的決定、§8.3.4 設計與開發管制、§8.6 產品與服務的放行",
+    purpose: "客戶樣品需求之申請、製作與寄送紀錄",
+    usage: "業務接獲客戶樣品需求時開立；規格比照派工單填寫，完成後隨樣品寄出並留存紀錄。",
+    applicantKey: "s0.sales",
+    listFields: [
+      {k: "s0.no", l: "樣品單號"},
+      {k: "s0.custCode", l: "客戶代碼"},
+      {k: "s0.custName", l: "客戶名稱"}
+    ],
+    sections: [
+      {h: "一、樣品基本資料", type: "pairs", rows: [
+        [{k: "no", l: "樣品單號", req: true, serial: true}, {k: "applyDate", l: "申請日期", type: "date", req: true}],
+        [{k: "sales", l: "業務負責人", req: true}, {k: "priority", l: "優先等級", type: "select", opts: ["高", "一般", "低"]}],
+        [{k: "custCode", l: "客戶代碼", req: true}, {k: "custName", l: "客戶名稱"}],
+        [{k: "orderNo", l: "訂單／詢價單號"}, {k: "dueDate", l: "客戶需求日", type: "date"}],
+        [{k: "purpose", l: "樣品用途", type: "select", opts: ["新客戶開發", "新產品提案", "既有產品改版", "客訴驗證", "展覽／型錄"]}, {k: "qty", l: "樣品總數量"}]
+      ]},
+      {h: "二、樣品規格（比照派工單）", type: "pairs", rows: [
+        [{k: "name", l: "品名"}, {k: "fork", l: "腳架"}],
+        [{k: "plating", l: "電鍍顏色", type: "select", opts: ["金", "銀", "黑", "鋅", "不電鍍", "其他"]}, {k: "screw", l: "螺絲規格／四角板"}],
+        [{k: "up", l: "上皿（編號）"}, {k: "down", l: "下皿（編號）"}],
+        [{k: "wheel", l: "輪子規格"}, {k: "mat", l: "材質", type: "select", opts: ["TPR", "PU", "PP", "尼龍", "橡膠", "其他"]}],
+        [{k: "color", l: "顏色"}, {k: "unit", l: "單位", type: "select", opts: ["只", "組"]}]
+      ]},
+      {h: "三、型式與數量", type: "table", k: "t1", rows: 5,
+       rowLabels: ["活動", "固定", "側煞", "前煞", "前雙煞"],
+       cols: [{l: "型式", w: "30%", static: true}, {l: "數量", w: "22%"}, {l: "客戶指定重點", w: "40%"}]},
+      {h: "四、製作與寄送", type: "pairs", rows: [
+        [{k: "makeDate", l: "預計完成日", type: "date"}, {k: "shipDate", l: "預計寄出日", type: "date"}],
+        [{k: "shipWay", l: "寄送方式", type: "select", opts: ["快遞", "親送", "客戶自取", "其他"]}, {k: "tracking", l: "追蹤單號"}],
+        [{k: "receiver", l: "收件人"}, {k: "phone", l: "聯絡電話"}],
+        [{k: "address", l: "寄送地址"}, {k: "charge", l: "樣品費用", type: "select", opts: ["免費", "收費"]}]
+      ]},
+      {h: "五、包裝方式與備註", type: "textarea", k: "note", rows: 3,
+       hint: "包裝、標示、客戶特殊要求、是否需要樣品承認書…"},
+      {h: "六、簽核", type: "sig", rows: ["業務承辦", "業務主管", "廠長／總經理"]},
+      {h: "七、版本歷程", type: "history"}
     ]
   }
 ];
