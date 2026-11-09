@@ -527,6 +527,8 @@ input.is-invalid, textarea.is-invalid { border-color: var(--danger); background:
 .img-drop-sm img { max-height: 96px; }
 .img-hint { pointer-events: none; }
 
+.img-drop:has(img[data-preview]:not([hidden])) .img-hint,
+.img-drop:has(img[data-preview]:not([hidden])) > span { display: none; }
 .img-clear {
   border: 0;
   background: none;
