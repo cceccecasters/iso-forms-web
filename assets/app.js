@@ -189,7 +189,7 @@ function draftKey(formId) { return "iso:draft:" + (userName() || "共用") + ":"
               '" data-src="' + esc("s" + si + "." + (c.verSrc || "no")) +
               '" data-target="' + esc(path) + '">領版</button></div>';
           } else {
-            cell = input(f, path, { type: c.t, req: c.req, label: c.l });
+            cell = input(f, path, { type: c.type || c.t, req: c.req, label: c.l, ph: c.ph, opts: c.opts || c.options });
           }
           return '<th class="row-h">' + esc(c.l) + (c.req ? ' <span class="req">*</span>' : "") + "</th><td>" + cell + "</td>";
         }).join("") + "</tr>";
