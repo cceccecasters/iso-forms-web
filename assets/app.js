@@ -129,6 +129,13 @@ function draftKey(formId) { return "iso:draft:" + (userName() || "共用") + ":"
     var reqAttr = opts.req ? ' data-req="1" data-req-label="' + esc(opts.label || "必填欄位") + '"' : "";
     if (opts.type === "date") return '<input type="date"' + common + ' value="' + esc(opts.value || "") + '"' + reqAttr + ">";
     if (opts.type === "number") return '<input type="number" inputmode="decimal"' + common + ' placeholder="' + esc(opts.ph || "") + '">';
+
+    if (opts.type === "select") {
+      var optsHtml = (opts.opts || []).map(function (o) {
+        return '<option value="' + esc(o) + '">' + esc(o) + '</option>';
+      }).join("");
+      return '<select' + common + reqAttr + '><option value="">—</option>' + optsHtml + '</select>';
+    }
     return '<input type="text"' + common + ' placeholder="' + esc(opts.ph || "") + '"' + reqAttr + ">";
   }
 
@@ -1078,6 +1085,7 @@ function draftKey(formId) { return "iso:draft:" + (userName() || "共用") + ":"
     { t: "製程與出貨", ids: ["FRM-QA-003", "FRM-QA-013"] },
     { t: "量測與不合格", ids: ["FRM-QA-005", "FRM-QA-006", "FRM-QA-007"] },
     { t: "訂單與顧客", ids: ["FRM-QA-012", "FRM-QA-016"] },
+    { t: "客戶樣品", ids: ["FRM-SL-001"] },
     { t: "系統管理", ids: ["FRM-QA-008", "FRM-QA-009", "FRM-QA-011", "FRM-QA-017"] },
     { t: "組織與規劃", ids: ["FRM-QA-014", "FRM-QA-015", "FRM-QA-018", "FRM-QA-019", "FRM-QA-020"] },
     { t: "文件與訓練", ids: ["SOP-PD-001", "SIP-QA-001", "FMEA-EN-001", "CLP-QA-001"] }
